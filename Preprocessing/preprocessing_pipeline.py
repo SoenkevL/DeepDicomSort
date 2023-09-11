@@ -5,7 +5,6 @@ import NIFTI_preparation_functions as NPF
 import time
 
 start_time = time.time()
-print(os.getcwd())
 with open('./DeepDicomSort/config.yaml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
