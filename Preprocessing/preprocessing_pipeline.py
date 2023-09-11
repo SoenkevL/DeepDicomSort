@@ -5,6 +5,7 @@ import NIFTI_preparation_functions as NPF
 import time
 
 start_time = time.time()
+print(os.pwd())
 with open('../config.yaml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
