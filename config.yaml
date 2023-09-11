@@ -11,7 +11,7 @@ data_preparation:
     image_size_z: 25
 
 training:
-    train_label_file: ../training/in
+    train_label_file: ../data/DATA/labels.txt
     output_folder: ../training/out
 
 testing:
