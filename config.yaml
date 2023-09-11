@@ -1,5 +1,5 @@
 preprocessing:
-    root_dicom_folder: ./data/DICOM
+    root_dicom_folder: /DDS/data/DICOM
     dcm2niix_bin: /usr/local/bin/dcm2niix  #not used anymore as dcm2niix is installed as a python package
     fslreorient2std_bin: /opt/ohpc/pub/apps/fsl/6.0.4/bin/fslreorient2std
     fslval_bin: /opt/ohpc/pub/apps/fsl/6.0.4/bin/fslval
@@ -11,15 +11,15 @@ data_preparation:
     image_size_z: 25
 
 training:
-    train_label_file: ./training/in
-    output_folder: ./training/out
+    train_label_file: ../training/in
+    output_folder: ../training/out
 
 testing:
-    test_label_file: ./testing/in
-    output_folder: ./testing/out
+    test_label_file: ../testing/in
+    output_folder: ../testing/out
     
 post_processing:
-    prediction_file: ~./testing/out/Predictions_model_all_brain_tumor_data.csv
+    prediction_file: ../testing/out/Predictions_model_all_brain_tumor_data.csv
 
 network:
     batch_size: 32
