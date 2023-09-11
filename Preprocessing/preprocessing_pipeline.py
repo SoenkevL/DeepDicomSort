@@ -30,6 +30,7 @@ def is_odd(number):
     return number % 2 != 0
 
 
+print(f'number of elements in dicom folder:{len(os.listdir(DICOM_FOLDER))}')
 print('Sorting DICOM to structured folders....')
 structured_dicom_folder = DPF.sort_DICOM_to_structured_folders(DICOM_FOLDER)
 
