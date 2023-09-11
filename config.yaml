@@ -1,5 +1,5 @@
 preprocessing:
-    root_dicom_folder: /DDS/data/DICOM
+    root_dicom_folder: //DDS/data/DICOM
     dcm2niix_bin: /usr/local/bin/dcm2niix  #not used anymore as dcm2niix is installed as a python package
     fslreorient2std_bin: /opt/ohpc/pub/apps/fsl/6.0.4/bin/fslreorient2std
     fslval_bin: /opt/ohpc/pub/apps/fsl/6.0.4/bin/fslval
