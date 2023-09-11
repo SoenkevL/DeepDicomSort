@@ -62,7 +62,7 @@ def move_RGB_images(root_dir, fslval_bin):
         for i_file in files:
             if '.nii.gz' in i_file:
                 image_file = os.path.join(root, i_file)
-                system_command = 'fsl' + ' ' + image_file + ' data_type' #will not work in environment apparently
+                system_command = fslval_bin + ' ' + image_file + ' data_type' #will not work in environment apparently
 
                 output = subprocess.check_output(system_command, shell=True).decode('utf-8')
 
@@ -105,7 +105,7 @@ def reorient_to_std(root_dir, fslreorient_bin):
             if '.nii.gz' in i_file:
                 full_file = os.path.join(root, i_file)
 
-                command = 'fsl' + ' ' + full_file + ' ' + full_file #will not work in environment apparently
+                command = fslreorient_bin + ' ' + full_file + ' ' + full_file #will not work in environment apparently
                 os.system(command)
     return
 
