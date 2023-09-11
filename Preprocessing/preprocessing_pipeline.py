@@ -6,7 +6,7 @@ import time
 
 start_time = time.time()
 print(os.getcwd())
-with open('/DeepDicomSort/config.yaml', 'r') as ymlfile:
+with open('./DeepDicomSort/config.yaml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 x_image_size = cfg['data_preparation']['image_size_x']
