@@ -11,11 +11,11 @@ data_preparation:
     image_size_z: 25
 
 training:
-    train_label_file: ../data/DATA/labels.txt
+    train_label_file: ../training/anno_labels.txt
     output_folder: ../training/out
 
 testing:
-    test_label_file: ../testing/in
+    test_label_file: ../data/DATA/labels.txt
     output_folder: ../testing/out
     
 post_processing:
