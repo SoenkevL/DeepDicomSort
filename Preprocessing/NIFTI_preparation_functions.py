@@ -40,7 +40,7 @@ def convert_DICOM_to_NIFTI(root_dir, dcm2niix_bin):
 
             nifti_file_name = '__'.join(sub_directory_names)
 
-            system_command = dcm2niix_bin + ' -6 -z y -a y -b n -d 0 -e n -f ' + nifti_file_name + ' -g n -i n -l y -w 0 -o ' + temp_dir + ' ' + root
+            system_command = 'dcm2niix' + ' -6 -z y -a y -b n -d 0 -e n -f ' + nifti_file_name + ' -g n -i n -l y -w 0 -o ' + temp_dir + ' ' + root
             os.system(system_command)
 
             # dcm2niix doesnt always use the specified file name, this is a work around
@@ -62,7 +62,7 @@ def move_RGB_images(root_dir, fslval_bin):
         for i_file in files:
             if '.nii.gz' in i_file:
                 image_file = os.path.join(root, i_file)
-                system_command = fslval_bin + ' ' + image_file + ' data_type'
+                system_command = 'fsl' + ' ' + image_file + ' data_type' #will not work in environment apparently
 
                 output = subprocess.check_output(system_command, shell=True).decode('utf-8')
 
@@ -105,7 +105,7 @@ def reorient_to_std(root_dir, fslreorient_bin):
             if '.nii.gz' in i_file:
                 full_file = os.path.join(root, i_file)
 
-                command = fslreorient_bin + ' ' + full_file + ' ' + full_file
+                command = 'fsl' + ' ' + full_file + ' ' + full_file #will not work in environment apparently
                 os.system(command)
     return
 

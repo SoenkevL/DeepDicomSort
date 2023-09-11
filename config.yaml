@@ -1,8 +1,9 @@
 preprocessing:
-    root_dicom_folder: /root/dicom/folder/path
+    root_dicom_folder: ~/DDS/data/DICOM
     dcm2niix_bin: /usr/local/bin/dcm2niix
-    fslreorient2std_bin: /usr/bin/fsl5.0-fslreorient2std
-    fslval_bin: /usr/bin/fsl5.0-fslval
+    fslreorient2std_bin: //opt/ohpc/pub/modulefiles/fsl/6.0.4
+    fslval_bin: //opt/ohpc/pub/modulefiles/fsl/6.0.4
+
 
 data_preparation:
     image_size_x: 256
@@ -10,15 +11,15 @@ data_preparation:
     image_size_z: 25
 
 training:
-    train_label_file: /path/to/train/label/file.txt
-    output_folder: /path/to/output/folder/
+    train_label_file: ~/DDS/training/in
+    output_folder: ~/DDS/training/out
 
 testing:
-    test_label_file: /path/to/test/label/file.txt
-    output_folder: /path/to/output/folder/
+    test_label_file: ~/DDS/testing/in
+    output_folder: ~/DDS/testing/out
     
 post_processing:
-    prediction_file: /path/to/prediction/file.csv
+    prediction_file: ~/DDS/testing/out/Predictions_model_all_brain_tumor_data.csv
 
 network:
     batch_size: 32

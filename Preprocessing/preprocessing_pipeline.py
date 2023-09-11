@@ -44,6 +44,7 @@ DPF.split_in_series(structured_dicom_folder)
 print('Converting DICOMs to NIFTI....')
 nifti_folder = NPF.convert_DICOM_to_NIFTI(structured_dicom_folder, DCM2NIIX_BIN)
 
+#commented out rgb stuff
 print('Moving RGB valued images.....')
 NPF.move_RGB_images(nifti_folder, FSLVAL_BIN)
 
