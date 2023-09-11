@@ -7,7 +7,7 @@ import CNN_model.CNN_models as models
 import os
 import datetime
 
-with open('./config.yaml', 'r') as ymlfile:
+with open('./DeepDicomSort/config.yaml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 train_label_file = cfg['training']['train_label_file']
