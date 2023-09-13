@@ -10,7 +10,7 @@ import Pytorch_monai.Model_and_transforms as MF
 import Pytorch_monai.Utils as Utils
 
 ### intialize from config file
-with open('./config.yaml', 'r') as ymlfile:
+with open('./config_LOCAL.yaml', 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 train_label_file = cfg['training']['train_label_file']
@@ -47,6 +47,8 @@ loss_function = torch.nn.BCEWithLogitsLoss()
 #train
 trainloss, valloss, model = MF.simpleTrain(model,loss_function,train_loader,val_loader,optimizer,nb_epoch,device=gpu,val_freq=10)
 
+#save model
+torch.save(model,os.path.join(output_folder,model_name+'.pt'))
 
 
 

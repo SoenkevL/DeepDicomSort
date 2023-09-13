@@ -12,7 +12,7 @@ def create_directory(dir):
         os.makedirs(dir)
 
 
-with open('./config.yaml', 'r') as ymlfile:
+with open('config.yaml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 prediction_file = cfg['post_processing']['prediction_file']
