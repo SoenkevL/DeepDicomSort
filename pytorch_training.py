@@ -11,7 +11,7 @@ import Pytorch_monai.Utils as Utils
 
 ### intialize from config file
 with open('./config.yaml', 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+    cfg = yaml.safe_load(ymlfile)
 
 train_label_file = cfg['training']['train_label_file']
 x_image_size = cfg['data_preparation']['image_size_x']
@@ -26,7 +26,7 @@ now = str(datetime.datetime.now()).replace(' ', '_')
 model_name = 'DDS_model_epochs' + str(nb_epoch) + '_time_' + now
 
 # load imagefilenames and onehot encoded labels
-train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file)
+train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file,nb_classes=5)
 print("Detected %d classes in training data" % N_train_classes)
 
 #create data dicitionaries and data loader to which monai transforms can be applied (transforms stored in Model_and_transforms.py)

@@ -20,15 +20,18 @@ def get_one_hot(targets, nb_classes):
     res = np.eye(nb_classes)[np.array(targets).reshape(-1)]
     return res.reshape(list(targets.shape)+[nb_classes])
 
-def load_labels(label_file): #from DDS original paper
+def load_labels(label_file,nb_classes=None): #from DDS original paper
     labels = np.genfromtxt(label_file, dtype='str')
     label_IDs = labels[:, 0]
     label_IDs = np.asarray(label_IDs)
-    label_values = labels[:, 1].astype(np.int)
-    extra_inputs = labels[:, 2:].astype(np.float)
+    label_values = labels[:, 1].astype(int)
+    extra_inputs = labels[:, 2:].astype(float)
     np.round(extra_inputs, 2)
 
-    N_classes = len(np.unique(label_values))
+    if nb_classes:
+        N_classes = nb_classes
+    else:
+        N_classes = len(np.unique(label_values))
 
     # Make sure that minimum of labels is 0
     label_values = label_values - np.min(label_values)
