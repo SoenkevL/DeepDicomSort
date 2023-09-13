@@ -107,4 +107,5 @@ venv.bak/
 #user
 config.yaml
 .idea
+.training
 
