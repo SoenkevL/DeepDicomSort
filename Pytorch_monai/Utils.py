@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-import pandas as pd
-import os
+import wandb
+import monai
 def chooseDevice(verbose=False):
     #returns the gpu with most free memory currently
     if torch.cuda.is_available():
@@ -39,3 +39,59 @@ def load_labels(label_file,nb_classes=None): #from DDS original paper
     one_hot_labels = get_one_hot(label_values, N_classes)
 
     return label_IDs, one_hot_labels, N_classes, extra_inputs
+
+def log_to_wandb(epoch, train_loss, val_loss):#, batch_data, outputs):
+    """ Function that logs ongoing training variables to W&B """
+
+    # Create list of images that have segmentation masks for model output and ground truth
+    # log_imgs = [wandb.Image(img, masks=wandb_masks(mask_output, mask_gt)) for img, mask_output,
+    #             mask_gt in zip(batch_data['img'], outputs, batch_data['mask'])]
+
+    # Send epoch, losses and images to W&B
+    wandb.log({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss})#, 'results': log_imgs})
+
+def from_compose_to_list(transform_compose):
+    """
+    Transform an object monai.transforms.Compose in a list fully describing the transform.
+    /!\ Random seed is not saved, then reproducibility is not enabled.
+    """
+    from copy import deepcopy
+
+    if not isinstance(transform_compose, monai.transforms.Compose):
+        raise TypeError("transform_compose should be a monai.transforms.Compose object.")
+
+    output_list = list()
+    for transform in transform_compose.transforms:
+        kwargs = deepcopy(vars(transform))
+
+        # Remove attributes which are not arguments
+        args = list(transform.__init__.__code__.co_varnames[1: transform.__init__.__code__.co_argcount])
+        for key, obj in vars(transform).items():
+            if key not in args:
+                del kwargs[key]
+
+        output_list.append({"class": transform.__class__, "kwargs": kwargs})
+    return output_list
+
+def from_list_to_compose(transform_list):
+    """
+    Transform a list in the corresponding monai.transforms.Compose object.
+    """
+
+    if not isinstance(transform_list, list):
+        raise TypeError("transform_list should be a list.")
+
+    pre_compose_list = list()
+
+    for transform_dict in transform_list:
+        if not isinstance(transform_dict, dict) or 'class' not in transform_dict or 'kwargs' not in transform_dict:
+            raise TypeError("transform_list should only contains dicts with keys ['class', 'kwargs']")
+
+        try:
+            transform = transform_dict['class'](**transform_dict['kwargs'])
+        except TypeError: # Classes have been converted to str after saving
+            transform = eval(transform_dict['class'].replace("__main__.", ""))(**transform_dict['kwargs'])
+
+        pre_compose_list.append(transform)
+
+    return monai.transforms.Compose(pre_compose_list)

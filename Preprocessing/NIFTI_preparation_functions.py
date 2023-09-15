@@ -4,7 +4,7 @@ import numpy as np
 from glob import glob
 import shutil
 import subprocess
-
+from tqdm import tqdm
 
 def create_directory(dir):
     if not os.path.exists(dir):
@@ -80,7 +80,7 @@ def extract_4D_images(root_dir):
 
     with open(out_4D_file, 'w') as the_file:
         for root, dirs, files in os.walk(root_dir):
-            for i_file in files:
+            for i_file in tqdm(files):
                 if '.nii.gz' in i_file:
                     image_file = os.path.join(root, i_file)
 
@@ -100,12 +100,12 @@ def extract_4D_images(root_dir):
 
 
 def reorient_to_std(root_dir, fslreorient_bin):
+    print('reorient')
     for root, dirs, files in os.walk(root_dir):
-        for i_file in files:
+        for i_file in tqdm(files):
             if '.nii.gz' in i_file:
                 full_file = os.path.join(root, i_file)
-
-                command = fslreorient_bin + ' ' + full_file + ' ' + full_file #will not work in environment apparently
+                command = fslreorient_bin + ' ' + full_file + ' ' + full_file
                 os.system(command)
     return
 
@@ -219,3 +219,4 @@ def create_label_file(root_dir, images_4D_file):
                     the_file.write('\t'.join(out_elements) + '\n')
 
     return label_file
+

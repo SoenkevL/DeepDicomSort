@@ -110,3 +110,6 @@ config.yaml
 .training
 *.ipynb
 *.yaml
+.testing
+Pytorch_monai/secrets.py
+wandb

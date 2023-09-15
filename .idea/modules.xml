@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/DeepDicomSortFork.iml" filepath="$PROJECT_DIR$/.idea/DeepDicomSortFork.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../testprojectForDockerAndTensorflow/DDS_docker/in/.idea/in.iml" filepath="$PROJECT_DIR$/../testprojectForDockerAndTensorflow/DDS_docker/in/.idea/in.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../data/.idea/data.iml" filepath="$PROJECT_DIR$/../data/.idea/data.iml" />
     </modules>
   </component>
 </project>
