@@ -30,7 +30,8 @@ now = str(datetime.datetime.now()).replace(' ', '_')
 model_name = 'DDS_model_epochs' + str(nb_epoch) + '_time_' + now
 
 ##label map
-label_map = json.load(train_labelmap_file)
+with open(train_labelmap_file) as labelmap:
+    label_map = json.load(labelmap)
 
 # load imagefilenames and onehot encoded labels
 train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file,nb_classes=5)
