@@ -34,7 +34,7 @@ with open(train_labelmap_file) as labelmap:
     label_map = json.load(labelmap)
 
 # load imagefilenames and onehot encoded labels
-train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file,nb_classes=5)
+train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file)
 print("Detected %d classes in training data" % N_train_classes)
 
 #initialize monai transforms
@@ -55,8 +55,8 @@ valTransforms = monai.transforms.Compose(
 
 #create data dicitionaries and data loader to which monai transforms can be applied (transforms stored in Model_and_transforms.py)
 train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
-val_data_dict = train_data_dict[-10:]
-train_data_dict = train_data_dict[:-10] #this can be optimized to shuffle beforehand for example
+val_data_dict = train_data_dict[-1000:]
+train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
 train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=1,num_workers=4)
 val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=-1,num_workers=4)
 train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
