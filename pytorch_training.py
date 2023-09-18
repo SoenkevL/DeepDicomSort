@@ -93,6 +93,7 @@ run_id = run.id # We remember here the run ID to be able to write the evaluation
 
 #define training loop
 def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epochs, device='cpu', val_freq=1):
+    print('\n\n------------------start training------------------------------\n\n')
     train_loss = []
     val_loss = []
     best_val_loss = 1000
