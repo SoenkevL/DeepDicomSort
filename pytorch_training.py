@@ -22,7 +22,7 @@ output_folder = cfg['training']['output_folder']
 batch_size = cfg['network']['batch_size']
 nb_epoch = cfg['network']['nb_epoch']
 
-wandb.login(key=wandbkey)
+# wandb.login(key=wandbkey)
 
 ## setup gpu and model name
 gpu = Utils.chooseDevice()
@@ -72,24 +72,24 @@ loss_function = torch.nn.CrossEntropyLoss()
 rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=3,min_lr=1e-6,verbose=1)
 
 ## setup logging to wandb
-run = wandb.init(
-    project='pytorch_DDS',
-    name='training_'+model_name,
-    config={
-        'label_map':label_map,
-        'loss function': str(loss_function),
-        'optimizer': str(optimizer),
-        'lr': optimizer.param_groups[0]["lr"],
-        'train_transform': Utils.from_compose_to_list(trainTransforms),
-        'val_transform': Utils.from_compose_to_list(valTransforms),
-        'train_batch_size': train_loader.batch_size,
-        'val_batch_size': val_loader.batch_size,
-    }
-)
+# run = wandb.init(
+#     project='pytorch_DDS',
+#     name='training_'+model_name,
+#     config={
+#         'label_map':label_map,
+#         'loss function': str(loss_function),
+#         'optimizer': str(optimizer),
+#         'lr': optimizer.param_groups[0]["lr"],
+#         'train_transform': Utils.from_compose_to_list(trainTransforms),
+#         'val_transform': Utils.from_compose_to_list(valTransforms),
+#         'train_batch_size': train_loader.batch_size,
+#         'val_batch_size': val_loader.batch_size,
+#     }
+# )
 # Do not hesitate to enrich this list of settings to be able to correctly keep track of your experiments!
 # For example you should add information on your model...
 
-run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
+#run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
 
 #define training loop
 def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epochs, device='cpu', val_freq=1):
