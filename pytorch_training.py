@@ -99,11 +99,13 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epo
     best_val_loss = 1000
 
     for epoch in range(epochs):
+        print(f'epoch: {epoch}')
         model.train()
         steps = 0
         epoch_loss = 0
 
         for batch in train_dataloader:
+            print('step')
             optimizer.zero_grad()
             images = batch['image'].float().to(device)
             labels = batch['label'].float().to(device)
