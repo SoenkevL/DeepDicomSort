@@ -9,6 +9,8 @@ from Pytorch_monai.secrets import wandbkey
 import Pytorch_monai.Model_and_transforms as MF
 import Pytorch_monai.Utils as Utils
 import json
+import logging
+from tqdm import tqdm
 
 ### intialize from config file
 with open('./config.yaml', 'r') as ymlfile:
@@ -58,11 +60,11 @@ valTransforms = monai.transforms.Compose(
 train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
 val_data_dict = train_data_dict[-1000:]
 train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
-train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=0.1,num_workers=4,progress=False)
-val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=1,num_workers=4,progress=False)
+train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=0.1,num_workers=4,progress=True)
+val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=1,num_workers=4,progress=True)
 train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
 val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
-
+logging.log(0,'finished datasets')
 #intialize model, optimizer, loss
 model = MF.Net(n_outputclasses=N_train_classes).to(device=gpu)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps=1e-7,amsgrad=False)
@@ -92,14 +94,13 @@ run = wandb.init(
 run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
 
 #define training loop
-def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epochs, device='cpu', val_freq=1):
+def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epochs, device=gpu, val_freq=1):
     print('\n\n------------------start training------------------------------\n\n')
     train_loss = []
     val_loss = []
     best_val_loss = 1000
 
-    for epoch in range(epochs):
-        print(f'epoch: {epoch}')
+    for epoch in tqdm(range(epochs)):
         model.train()
         steps = 0
         epoch_loss = 0
