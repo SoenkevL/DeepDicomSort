@@ -22,10 +22,10 @@ output_folder = cfg['training']['output_folder']
 batch_size = cfg['network']['batch_size']
 nb_epoch = cfg['network']['nb_epoch']
 
-# wandb.login(key=wandbkey)
+wandb.login(key=wandbkey)
 
 ## setup gpu and model name
-gpu = Utils.chooseDevice()
+gpu = Utils.chooseDevice(verbose=True)
 print(gpu)
 now = str(datetime.datetime.now()).replace(' ', '_')
 model_name = 'DDS_model_epochs' + str(nb_epoch) + '_time_' + now
@@ -58,8 +58,8 @@ valTransforms = monai.transforms.Compose(
 train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
 val_data_dict = train_data_dict[-1000:]
 train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
-train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=0.01,num_workers=4,progress=True)
-val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=0.1,num_workers=4,progress=False)
+train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=0.1,num_workers=4,progress=False)
+val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=1,num_workers=4,progress=False)
 train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
 val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
 
@@ -72,24 +72,24 @@ loss_function = torch.nn.CrossEntropyLoss()
 rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=3,min_lr=1e-6,verbose=1)
 
 ## setup logging to wandb
-# run = wandb.init(
-#     project='pytorch_DDS',
-#     name='training_'+model_name,
-#     config={
-#         'label_map':label_map,
-#         'loss function': str(loss_function),
-#         'optimizer': str(optimizer),
-#         'lr': optimizer.param_groups[0]["lr"],
-#         'train_transform': Utils.from_compose_to_list(trainTransforms),
-#         'val_transform': Utils.from_compose_to_list(valTransforms),
-#         'train_batch_size': train_loader.batch_size,
-#         'val_batch_size': val_loader.batch_size,
-#     }
-# )
+run = wandb.init(
+    project='pytorch_DDS',
+    name='training_'+model_name,
+    config={
+        'label_map':label_map,
+        'loss function': str(loss_function),
+        'optimizer': str(optimizer),
+        'lr': optimizer.param_groups[0]["lr"],
+        'train_transform': Utils.from_compose_to_list(trainTransforms),
+        'val_transform': Utils.from_compose_to_list(valTransforms),
+        'train_batch_size': train_loader.batch_size,
+        'val_batch_size': val_loader.batch_size,
+    }
+)
 # Do not hesitate to enrich this list of settings to be able to correctly keep track of your experiments!
 # For example you should add information on your model...
 
-#run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
+run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
 
 #define training loop
 def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epochs, device='cpu', val_freq=1):
@@ -105,7 +105,6 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epo
         epoch_loss = 0
 
         for batch in train_dataloader:
-            print('step')
             optimizer.zero_grad()
             images = batch['image'].float().to(device)
             labels = batch['label'].float().to(device)
