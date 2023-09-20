@@ -56,14 +56,23 @@ valTransforms = monai.transforms.Compose(
     ]
 )
 
-#create data dicitionaries and data loader to which monai transforms can be applied (transforms stored in Model_and_transforms.py)
+#create data dicitionaries
 train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
 val_data_dict = train_data_dict[-1000:]
 train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
+
+# do some checks on the label distribution
+trainLabelList = [np.argmax(dictItem['label']) for dictItem in train_data_dict]
+print(np.unique(trainLabelList,return_counts=True))
+valLabelList = [np.argmax(dictItem['label']) for dictItem in val_data_dict]
+print(np.unique(valLabelList,return_counts=True))
+
+#create datasets and loaders
 train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=0.5,num_workers=4,progress=True)
 val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=1,num_workers=4,progress=True)
 train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
 val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
+
 #intialize model, optimizer, loss
 model = MF.Net(n_outputclasses=N_train_classes).to(device=gpu)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps=1e-7,amsgrad=False)
@@ -87,8 +96,6 @@ run = wandb.init(
         'val_batch_size': val_loader.batch_size,
     }
 )
-# Do not hesitate to enrich this list of settings to be able to correctly keep track of your experiments!
-# For example you should add information on your model...
 
 run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
 
@@ -109,8 +116,6 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epo
             images = batch['image'].float().to(device)
             labels = batch['label'].float().to(device)
             output = model(images)
-            # print(output)
-            # print(labels)
             loss = loss_function(output,labels)
             epoch_loss += loss.item()
             loss.backward()
