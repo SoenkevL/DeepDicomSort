@@ -47,7 +47,7 @@ class Net(nn.Module): #first version ignores the additional 4d parameter but sho
         x = F.relu(x)
         x = self.droput(x)
         x = self.fc2(x)
-        output = F.softmax(x,dim=0)
+        output = F.softmax(x,dim=1)
         return output
 
 

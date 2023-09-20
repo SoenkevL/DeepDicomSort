@@ -151,7 +151,7 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epo
     return train_loss, val_loss, bestModel
 
 #train
-trainloss, valloss, model = train(model,loss_function,train_loader,val_loader,optimizer,nb_epoch,device=gpu,val_freq=10)
+trainloss, valloss, model = train(model,loss_function,train_loader,val_loader,optimizer,nb_epoch,device=gpu,val_freq=2)
 
 #save model
 torch.save(model,os.path.join(output_folder,model_name+'.pt'))
