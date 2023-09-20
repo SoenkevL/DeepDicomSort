@@ -45,14 +45,14 @@ trainTransforms = monai.transforms.Compose(
     [
         monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
         monai.transforms.EnsureTyped(keys=['image']),
-        monai.transforms.EnsureChannelFirstd(keys=['image'],channel_dim=0)
+        monai.transforms.EnsureChannelFirstd(keys=['image'])
     ]
 )
 valTransforms = monai.transforms.Compose(
     [
         monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
         monai.transforms.EnsureTyped(keys=['image']),
-        monai.transforms.EnsureChannelFirstd(keys=['image'],channel_dim=0)
+        monai.transforms.EnsureChannelFirstd(keys=['image'])
     ]
 )
 
