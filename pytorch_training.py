@@ -79,7 +79,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps
 loss_function = torch.nn.CrossEntropyLoss()
 
 #setup callbacks
-rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=3,min_lr=1e-6,verbose=1)
+rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=10,min_lr=1e-6,verbose=1)
 
 ## setup logging to wandb
 run = wandb.init(
