@@ -62,9 +62,8 @@ val_data_dict = train_data_dict[-1000:]
 train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
 train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=0.5,num_workers=4,progress=True)
 val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=1,num_workers=4,progress=True)
-train_loader = monai.data.DataLoader(train_ds,batch_size=8,shuffle=True,num_workers=0)
-val_loader = monai.data.DataLoader(val_ds,batch_size=8,shuffle=True,num_workers=0)
-logging.log(0,'finished datasets')
+train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
+val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
 #intialize model, optimizer, loss
 model = MF.Net(n_outputclasses=N_train_classes).to(device=gpu)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps=1e-7,amsgrad=False)
