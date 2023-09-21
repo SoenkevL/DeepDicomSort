@@ -74,7 +74,7 @@ train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True
 val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
 
 #intialize model, optimizer, loss
-model = Utils.updateModelDictForTransferLearning('./Trained_Models/convertedModels/transferStateDict_allTrainingData.pt',MF.Net(n_outputclasses=N_train_classes)).to(device=gpu)
+model = Utils.updateModelDictForTransferLearning('./Trained_Models/convertedModels/transferStateDict_allTrainingData_withDense1.pt',MF.Net(n_outputclasses=N_train_classes)).to(device=gpu)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps=1e-7,amsgrad=False)
 loss_function = torch.nn.CrossEntropyLoss()
 
