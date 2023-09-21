@@ -193,11 +193,10 @@ def rescale_image_intensity(root_dir):
     return
 
 
-def create_label_file(root_dir, images_4D_file):
+def create_label_file(root_dir, images_4D_file, name='labels.txt'):
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     data_dir = os.path.join(base_dir, 'DATA')
-
-    label_file = os.path.join(data_dir, 'labels.txt')
+    label_file = os.path.join(data_dir, name)
 
     images_4D = np.genfromtxt(images_4D_file, dtype='str')
 
