@@ -102,4 +102,5 @@ def updateModelDictForTransferLearning(dictPath,model): #works only for the two 
     for key in model_sd.keys():
         if key in transfer_sd.keys():
             model_sd[key] = transfer_sd[key]
-    return model.load_state_dict(model_sd)
+    model.load_state_dict(model_sd)
+    return model

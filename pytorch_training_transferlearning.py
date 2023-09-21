@@ -59,7 +59,7 @@ valTransforms = monai.transforms.Compose(
 #create data dicitionaries
 train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
 val_data_dict = train_data_dict[-1000:]
-train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
+train_data_dict = train_data_dict[-5000:-1000] #this can be optimized to shuffle beforehand for example
 
 # do some checks on the label distribution
 trainLabelList = [np.argmax(dictItem['label']) for dictItem in train_data_dict]
@@ -74,7 +74,7 @@ train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True
 val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
 
 #intialize model, optimizer, loss
-model = MF.Net(n_outputclasses=N_train_classes).to(device=gpu)
+model = Utils.updateModelDictForTransferLearning('./Trained_Models/convertedModels/transferStateDict_allTrainingData.pt',MF.Net(n_outputclasses=N_train_classes)).to(device=gpu)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps=1e-7,amsgrad=False)
 loss_function = torch.nn.CrossEntropyLoss()
 
