@@ -95,3 +95,11 @@ def from_list_to_compose(transform_list):
         pre_compose_list.append(transform)
 
     return monai.transforms.Compose(pre_compose_list)
+
+def updateModelDictForTransferLearning(dictPath,model): #works only for the two model provided by the author and only updated the weights of specific layers in hope to speed up the training process
+    model_sd = model.state_dict()
+    transfer_sd = torch.load(dictPath)
+    for key in model_sd.keys():
+        if key in transfer_sd.keys():
+            model_sd[key] = transfer_sd[key]
+    return model.load_state_dict(model_sd)
