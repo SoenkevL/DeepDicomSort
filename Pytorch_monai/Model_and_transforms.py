@@ -12,12 +12,12 @@ class Net(nn.Module): #first version ignores the additional 4d parameter but sho
         self.maxpool12 = nn.MaxPool2d(kernel_size=3,stride=3,padding=0)
         self.maxpool34 = nn.MaxPool2d(kernel_size=3,stride=3,padding=0)
         self.maxpool56 = nn.MaxPool2d(kernel_size=3,stride=3,padding=0)
-        self.relu1 = nn.PReLU(num_parameters=1,init=0.25) #check with paper
-        self.relu2 = nn.PReLU(num_parameters=1,init=0.25)
-        self.relu3 = nn.PReLU(num_parameters=1,init=0.25)
-        self.relu4 = nn.PReLU(num_parameters=1,init=0.25)
-        self.relu5 = nn.PReLU(num_parameters=1,init=0.25)
-        self.relu6 = nn.PReLU(num_parameters=1,init=0.25)
+        self.relu1 = nn.PReLU(num_parameters=32,init=0.25) #check with paper
+        self.relu2 = nn.PReLU(num_parameters=32,init=0.25)
+        self.relu3 = nn.PReLU(num_parameters=64,init=0.25)
+        self.relu4 = nn.PReLU(num_parameters=64,init=0.25)
+        self.relu5 = nn.PReLU(num_parameters=64,init=0.25)
+        self.relu6 = nn.PReLU(num_parameters=64,init=0.25)
         self.batchnorm32_1 = nn.BatchNorm2d(num_features=32)
         self.batchnorm32_2 = nn.BatchNorm2d(num_features=32)
         self.batchnorm64_3 = nn.BatchNorm2d(num_features=64)
