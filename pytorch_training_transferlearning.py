@@ -59,7 +59,7 @@ valTransforms = monai.transforms.Compose(
 #create data dicitionaries
 train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
 val_data_dict = train_data_dict[-1000:]
-train_data_dict = train_data_dict[-5000:-1000] #this can be optimized to shuffle beforehand for example
+train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
 
 # do some checks on the label distribution
 trainLabelList = [np.argmax(dictItem['label']) for dictItem in train_data_dict]
@@ -79,7 +79,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps
 loss_function = torch.nn.CrossEntropyLoss()
 
 #setup callbacks
-rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=10,min_lr=1e-6,verbose=1)
+rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=3,min_lr=1e-6,verbose=1)
 
 ## setup logging to wandb
 run = wandb.init(
@@ -124,6 +124,12 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epo
 
         train_loss.append(epoch_loss/steps)
         rop.step(train_loss[-1]) #learning rate scheduler
+        #implement early stopping
+        if len(train_loss) > 6:
+            if np.abs(val_loss[-6])-np.abs(np.min(val_loss[-5:-1])) < 0.1:
+                print(f'finished training early with final validation loss of {val_loss[-1]}')
+                return train_loss, val_loss, bestModel
+        #end of early stopping
 
         # validation loop
         if epoch % val_freq == 0:
@@ -142,12 +148,6 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epo
             if val_loss[-1] < best_val_loss:
                 best_val_loss = val_loss[-1]
                 bestModel = model
-            #implement early stopping
-            if len(val_loss) > 6:
-                if np.abs(val_loss[-6])-np.abs(np.min(val_loss[-5:-1])) < 0.01:
-                    print(f'finished training early with final validation loss of {val_loss[-1]}')
-                    return train_loss, val_loss, bestModel
-            #end of early stopping
         #log the training process
         Utils.log_to_wandb(epoch,train_loss[-1],val_loss[-1])
 
@@ -155,7 +155,7 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, epo
     return train_loss, val_loss, bestModel
 
 #train
-trainloss, valloss, model = train(model,loss_function,train_loader,val_loader,optimizer,nb_epoch,device=gpu,val_freq=10)
+trainloss, valloss, model = train(model,loss_function,train_loader,val_loader,optimizer,nb_epoch,device=gpu,val_freq=1)
 
 #save model
 torch.save(model,os.path.join(output_folder,model_name+'.pt'))
