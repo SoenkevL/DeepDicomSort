@@ -52,20 +52,20 @@ cols = predictCols+rawCols
 ResultsFrame = pd.DataFrame(columns=cols)
 for datapoint in tqdm(test_loader):
     image = datapoint['image'].to(device=gpu)
-groundTruth = np.argmax(datapoint['label']).to('cpu').detach().numpy()
-ID = datapoint['ID']
-prediction_raw = model(image)
-prediction = np.argmax(prediction_raw)
-predDict={'imageID':ID,'groundTruth':groundTruth,'prediction':prediction}
-predictionRawNp = prediction_raw.to('cpu').detach().numpy().squeeze(0)
-rawDict = {f'raw_{i}':prob for i,prob in enumerate(predictionRawNp)}
-Dict = predDict
-Dict.update(rawDict)
-result = pd.DataFrame(Dict)
-if ResultsFrame.empty:
-    ResultsFrame = result
-else:
-    ResultsFrame = pd.concat([ResultsFrame,result],ignore_index=True)
+    groundTruth = np.argmax(datapoint['label']).to('cpu').detach().numpy()
+    ID = datapoint['ID']
+    prediction_raw = model(image)
+    prediction = np.argmax(prediction_raw)
+    predDict={'imageID':ID,'groundTruth':groundTruth,'prediction':prediction}
+    predictionRawNp = prediction_raw.to('cpu').detach().numpy().squeeze(0)
+    rawDict = {f'raw_{i}':prob for i,prob in enumerate(predictionRawNp)}
+    Dict = predDict
+    Dict.update(rawDict)
+    result = pd.DataFrame(Dict)
+    if ResultsFrame.empty:
+        ResultsFrame = result
+    else:
+        ResultsFrame = pd.concat([ResultsFrame,result],ignore_index=True)
 
 fileCounter=0
 while os.path.exists(out_file):
