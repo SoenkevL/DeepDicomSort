@@ -16,5 +16,5 @@ for idx in range(len(dataframe)):
     plt.figure()
     plt.imshow(data[:,:],cmap='gray')
     plt.title(f"{dataframe['imageID'][idx]} : {dataframe['prediction'][idx]}")
-    plt.savefig(os.path.join(imagePath,str(idx)))
+    plt.savefig(os.path.join(imagePath,f'p{idx}.png'))
 #%%
