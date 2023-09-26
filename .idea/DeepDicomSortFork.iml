@@ -5,6 +5,7 @@
     <orderEntry type="jdk" jdkName="Python 3.9 (.mvenv)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="data" />
+    <orderEntry type="module" module-name="data_small" />
   </component>
   <component name="PyDocumentationSettings">
     <option name="format" value="PLAIN" />

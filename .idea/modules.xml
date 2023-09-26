@@ -3,7 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/DeepDicomSortFork.iml" filepath="$PROJECT_DIR$/.idea/DeepDicomSortFork.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../data/.idea/data.iml" filepath="$PROJECT_DIR$/../data/.idea/data.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../data_BRATS/.idea/data.iml" filepath="$PROJECT_DIR$/../data_BRATS/.idea/data.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../data_small/.idea/data_small.iml" filepath="$PROJECT_DIR$/../data_small/.idea/data_small.iml" />
     </modules>
   </component>
 </project>

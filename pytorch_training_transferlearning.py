@@ -13,7 +13,7 @@ import logging
 from tqdm import tqdm
 
 ### intialize from config file
-with open('./config.yaml', 'r') as ymlfile:
+with open('config_BRATS.yaml', 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 train_label_file = cfg['training']['train_label_file']

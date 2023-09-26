@@ -8,7 +8,7 @@ import os
 model_file = './Trained_Models/model_all_brain_tumor_data.hdf5'
 batch_size = 1
 
-with open('config.yaml', 'r') as ymlfile:
+with open('config_BRATS.yaml', 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 test_label_file = cfg['testing']['test_label_file']

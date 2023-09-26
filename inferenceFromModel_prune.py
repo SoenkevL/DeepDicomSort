@@ -13,7 +13,7 @@ import Pytorch_monai.Utils as Utils
 model_file = '.training/out/DDS_model_epochs100_time_2023-09-21_16:16:19.587076.pt'
 batch_size = 1
 
-with open('config.yaml', 'r') as ymlfile:
+with open('config_BRATS.yaml', 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 gpu = Utils.chooseDevice(verbose=True)

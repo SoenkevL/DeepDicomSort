@@ -16,7 +16,7 @@ def delete_directory(dir):
         shutil.rmtree(dir)
 
 
-def convert_DICOM_to_NIFTI(root_dir, dcm2niix_bin):
+def convert_DICOM_to_NIFTI(root_dir):
     # Convert all dicom files in the directory to nifti
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
@@ -193,8 +193,8 @@ def rescale_image_intensity(root_dir):
     return
 
 
-def create_label_file(root_dir, images_4D_file, name='labels.txt'):
-    base_dir = os.path.dirname(os.path.normpath(root_dir))
+def create_label_file(root_dir,base_dir, images_4D_file, name='labels.txt'):
+    base_dir = base_dir
     data_dir = os.path.join(base_dir, 'DATA')
     label_file = os.path.join(data_dir, name)
 

@@ -7,7 +7,7 @@ import os
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-with open('./config.yaml', 'r') as ymlfile:
+with open('config_BRATS.yaml', 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 x_image_size = cfg['data_preparation']['image_size_x']
