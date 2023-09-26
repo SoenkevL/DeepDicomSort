@@ -2,11 +2,12 @@ import os
 import yaml
 import DICOM_preparation_functions as DPF
 import NIFTI_preparation_functions as NPF
+import preprocessingFunctionMonai as PFM
 import time
 
 start_time = time.time()
 with open('./config.yaml', 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+    cfg = yaml.safe_load(ymlfile)
 
 x_image_size = cfg['data_preparation']['image_size_x']
 y_image_size = cfg['data_preparation']['image_size_y']
@@ -40,17 +41,10 @@ print('Checking and splitting for double scans in folders....')
 DPF.split_in_series(structured_dicom_folder)
 
 print('Converting DICOMs to NIFTI....')
-nifti_folder = NPF.convert_DICOM_to_NIFTI(structured_dicom_folder, DCM2NIIX_BIN)
-
-
-print('Extracting single point from 4D images....')
-images_4D_file = NPF.extract_4D_images(nifti_folder)
+nifti_folder = NPF.convert_DICOM_to_NIFTI(structured_dicom_folder)
 
 print('applying monai transforms and splitting images')
-
-
-print('Creating label file....')
-NPF.create_label_file(nifti_slices_folder, images_4D_file)
+nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size,train_test_split=False)
 
 elapsed_time = time.time() - start_time
 
