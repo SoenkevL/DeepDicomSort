@@ -92,8 +92,9 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
         rop.step(train_loss[-1]) #learning rate scheduler
         #implement early stopping
         if len(train_loss) > 6:
-            if np.abs(val_loss[-6])-np.abs(np.min(val_loss[-5:-1])) < 0.0001:
-                print(f'finished training early with final validation loss of {val_loss[-1]}')
+            train_loss_diff = np.abs(train_loss[-6])-np.abs(np.min(train_loss[-5:]))
+            if train_loss_diff < 0.0001:
+                print(f'finished training early with final training loss of {train_loss[-1]} and a loss difference of {train_loss_diff}')
                 return train_loss, val_loss, bestModel
         #end of early stopping
 
