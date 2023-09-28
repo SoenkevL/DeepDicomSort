@@ -60,7 +60,11 @@ def preprocessImagesMonai(niftiDirec, x, y, z, train_test_split=False):
                 slice = np.array(slice)
                 slice = slice.reshape((1,x,y,1))
                 metadata = dict(data[f'{self.keys[0]}_meta_dict'])
-                saver(img=slice,meta_data=metadata)
+                try:
+                    saver(img=slice,meta_data=metadata)
+                except RuntimeError:
+                    print(f'rutime error when trying to save image {data[self.keys[1]]} to slice{i}')
+                    break
             return data
 
 
@@ -98,8 +102,8 @@ def preprocessImagesMonai(niftiDirec, x, y, z, train_test_split=False):
 
     
 
-    if(train_test_split):
-        train_dataset, test_dataset = train_test_split(dataset,random_state=42,shuffle=True,test_size=0.1)
+    if(train_test_split!='None'):
+        train_dataset, test_dataset = train_test_split(dataset,random_state=42,shuffle=True,test_size=float(train_test_split))
         ds_train = monai.data.Dataset(train_dataset, trainTransform)
         dl_train = monai.data.DataLoader(ds_train, batch_size=1, num_workers=1)
         ds_test = monai.data.Dataset(test_dataset, testTransform)
@@ -128,11 +132,8 @@ def preprocessImagesMonai(niftiDirec, x, y, z, train_test_split=False):
         dl = monai.data.DataLoader(ds, batch_size=1, num_workers=1)
         print('>>> create data set')
         counter = -1
-        try:
-            for i in tqdm(dl):
-                counter+=1
-                continue
-        except:
-            print(i['label'])
+        for i in tqdm(dl):
+            counter+=1
+            continue
         nifp.create_label_file(NIFIT_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
-        return NIFIT_slices_direc
+    return NIFIT_slices_direc

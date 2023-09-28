@@ -31,7 +31,7 @@ def load_data(prediction_folder,label_map):
     test_loader = monai.data.DataLoader(test_ds,shuffle=False,num_workers=0,batch_size=1)
     # do some checks on the labels
 
-    rawCols = [f'raw_{i}' for i in range(len(label_map.keys())))]
+    rawCols = [f'raw_{i}' for i in range(len(label_map.keys()))]
     predictCols = ['imageID','prediction']
     cols = predictCols+rawCols
     ResultsFrame = pd.DataFrame(columns=cols)
