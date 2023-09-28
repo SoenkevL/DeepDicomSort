@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/DeepDicomSortFork.iml" filepath="$PROJECT_DIR$/.idea/DeepDicomSortFork.iml" />
       <module fileurl="file://$PROJECT_DIR$/../data_BRATS/.idea/data.iml" filepath="$PROJECT_DIR$/../data_BRATS/.idea/data.iml" />
       <module fileurl="file://$PROJECT_DIR$/../data_small/.idea/data_small.iml" filepath="$PROJECT_DIR$/../data_small/.idea/data_small.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../prototyping/.idea/prototyping.iml" filepath="$PROJECT_DIR$/../prototyping/.idea/prototyping.iml" />
     </modules>
   </component>
 </project>
