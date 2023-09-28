@@ -11,22 +11,23 @@ import Pytorch_monai.Utils as Utils
 import json
 import logging
 from tqdm import tqdm
+from sklearn.model_selection import train_test_split
 
 
 def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None):
-    rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=3,min_lr=1e-6,verbose=1)
     if initWeights:
         model = Utils.updateModelDictForTransferLearning(initWeights,MF.Net(n_outputclasses=N_train_classes)).to(device=device)
     else:
         model = MF.Net(n_outputclasses=N_train_classes).to(device=device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps=1e-7,amsgrad=False)
     loss_function = torch.nn.CrossEntropyLoss()
+    rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=3,min_lr=1e-6,verbose=1)
     return model, optimizer, loss_function, rop
 
 
-def prepareData(train_label_file, batch_size):
+def prepareData(train_label_file, batch_size,N_train_classes):
     # load imagefilenames and onehot encoded labels
-    train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file)
+    train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file,nb_classes=N_train_classes)
     print("Detected %d classes in training data" % N_train_classes)
 
     #initialize monai transforms
@@ -46,9 +47,9 @@ def prepareData(train_label_file, batch_size):
     )
 
     #create data dicitionaries
+    train_image_labels_noh = np.argmax(train_image_labels,axis=1)
     train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
-    val_data_dict = train_data_dict[-1000:]
-    train_data_dict = train_data_dict[:-1000] #this can be optimized to shuffle beforehand for example
+    train_data_dict, val_data_dict = train_test_split(train_data_dict,stratify=train_image_labels_noh,shuffle=True,random_state=42,test_size=0.1)
 
     # do some checks on the label distribution
     trainLabelList = [np.argmax(dictItem['label']) for dictItem in train_data_dict]
@@ -91,8 +92,9 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
         rop.step(train_loss[-1]) #learning rate scheduler
         #implement early stopping
         if len(train_loss) > 6:
-            if np.abs(val_loss[-6])-np.abs(np.min(val_loss[-5:-1])) < 0.1:
-                print(f'finished training early with final validation loss of {val_loss[-1]}')
+            train_loss_diff = np.abs(train_loss[-6])-np.abs(np.min(train_loss[-5:]))
+            if train_loss_diff < 0.0001:
+                print(f'finished training early with final training loss of {train_loss[-1]} and a loss difference of {train_loss_diff}')
                 return train_loss, val_loss, bestModel
         #end of early stopping
 
@@ -127,17 +129,16 @@ def main(configFile='config.yaml'):
         cfg = yaml.safe_load(ymlfile)
 
     train_label_file = cfg['training']['train_label_file']
-    train_labelmap_file = cfg['training']['label_map_file']
-    x_image_size = cfg['data_preparation']['image_size_x']
-    y_image_size = cfg['data_preparation']['image_size_y']
+    train_labelmap_file = cfg['model']['label_map_file']
     output_folder = cfg['training']['output_folder']
     batch_size = cfg['network']['batch_size']
     nb_epoch = cfg['network']['nb_epoch']
+    transfer_weights = cfg['training']['transfer_weights_path']
 
     ##label map
     with open(train_labelmap_file) as labelmap:
         label_map = json.load(labelmap)
-    N_train_classes = len(labelmap.keys())
+    N_train_classes = len(label_map.keys())
 
     ## setup gpu and model name
     gpu = Utils.chooseDevice(verbose=True)
@@ -146,8 +147,8 @@ def main(configFile='config.yaml'):
     model_name = 'DDS_model_epochs' + str(nb_epoch) + '_time_' + now
 
     #initialize model and data
-    model, optimizer, loss_function, rop = prepareModelAndCallbacks(N_train_classes,gpu,'./Trained_Models/convertedModels/transferStateDict_allTrainingData_withDense1.pt')
-    train_loader, val_loader, trainTransforms, valTransforms = prepareData(train_label_file=train_label_file,batch_size=batch_size)
+    model, optimizer, loss_function, rop = prepareModelAndCallbacks(N_train_classes,gpu,transfer_weights)
+    train_loader, val_loader, trainTransforms, valTransforms = prepareData(train_label_file=train_label_file,batch_size=batch_size,N_train_classes=N_train_classes)
 
     ## setup logging to wandb
     wandb.login(key=wandbkey)
@@ -173,7 +174,7 @@ def main(configFile='config.yaml'):
 
 
 if __name__=='__main__':
-    main() #can specify file to different config than standard 'config.yaml' here as input argument
+    main('/trinity/home/r098375/DDS/ADNI/FirstTest/DATA/config_ADNI.yaml') #can specify file to different config than standard 'config.yaml' here as input argument
 
 
 

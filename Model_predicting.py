@@ -9,7 +9,12 @@ from tqdm import tqdm
 import Pytorch_monai.Model_and_transforms as MF
 import Pytorch_monai.Utils as Utils
 import json
+import argparse
 
+def createMetaInfoString(modelFile, predictionFolder, labelmap):
+    return f'model: {os.path.basename(modelFile)} \n \
+            predictionFolder: {predictionFolder} \n \
+            labelmap: {labelmap}'
 
 def load_data(prediction_folder,label_map):
     test_image_IDs = []
@@ -31,13 +36,13 @@ def load_data(prediction_folder,label_map):
     test_loader = monai.data.DataLoader(test_ds,shuffle=False,num_workers=0,batch_size=1)
     # do some checks on the labels
 
-    rawCols = [f'raw_{i}' for i in range(len(label_map.keys())))]
+    rawCols = [f'raw_{i}' for i in range(len(label_map.keys()))]
     predictCols = ['imageID','prediction']
     cols = predictCols+rawCols
     ResultsFrame = pd.DataFrame(columns=cols)
     return ResultsFrame, test_loader
 
-def testing(model, test_loader, device, ResultsFrame, output_folder, model_name):
+def predicting(model, test_loader, device, ResultsFrame, output_folder, model_name, meta_string):
     for datapoint in tqdm(test_loader):
         image = datapoint['image'].to(device=device)
         ID = datapoint['ID']
@@ -56,28 +61,39 @@ def testing(model, test_loader, device, ResultsFrame, output_folder, model_name)
 
     fileCounter=0
     out_file = os.path.join(output_folder, 'Predictions_' + model_name + '.csv')
+    out_meta_file = os.path.join(output_folder, 'Meta_info_' + model_name + '.txt')
     while os.path.exists(out_file):
         out_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + '.csv')
+        out_meta_file = os.path.join(output_folder, f'Meta_info_copy{fileCounter}_' + model_name + '.txt')
         fileCounter+=1
         if fileCounter==5:
             print('too many copies copy 5 will be overriden')
             break
     ResultsFrame.to_csv(out_file,index=False)
+    with open(out_meta_file,'w') as f:
+        f.write(meta_string)
     return ResultsFrame
 
 
 
-def main(configFile='config.yaml'):
-    with open(configFile, 'r') as ymlfile:
+def main():
+    parser = argparse.ArgumentParser(description='This is Model test for the specified config parameters')
+    parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+    args = parser.parse_args()
+    with open(args.configFile, 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
     model_file = cfg['model']['model_file']
     output_folder = cfg['post_processing']['output_folder']
     label_map_file = cfg['model']['label_map_file']
     prediction_folder = cfg['post_processing']['prediction_folder']
 
+
+
     ##label map
     with open(label_map_file) as labelmap:
         label_map = json.load(labelmap)
+
+    metaString = createMetaInfoString(modelFile=model_file, predictionFolder=prediction_folder, labelmap=label_map)
 
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
@@ -91,7 +107,7 @@ def main(configFile='config.yaml'):
 
     ResultsFrame_empty, test_loader = load_data(prediction_folder=prediction_folder,label_map=label_map)
 
-    ResultsFrame = testing(model,test_loader,gpu,ResultsFrame_empty,output_folder,model_name)
+    ResultsFrame = predicting(model,test_loader,gpu,ResultsFrame_empty,output_folder,model_name,meta_string=metaString)
 
 if __name__=='__main__':
     main() #can specify file to different config than standard 'config.yaml' here as input argument

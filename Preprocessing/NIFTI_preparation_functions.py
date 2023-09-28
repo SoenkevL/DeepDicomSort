@@ -193,7 +193,7 @@ def rescale_image_intensity(root_dir):
     return
 
 
-def create_label_file(root_dir,base_dir, images_4D_file, name='labels.txt'):
+def create_label_file(nifti_dir,base_dir, images_4D_file, name='labels.txt'):
     base_dir = base_dir
     data_dir = os.path.join(base_dir, 'DATA')
     label_file = os.path.join(data_dir, name)
@@ -201,7 +201,7 @@ def create_label_file(root_dir,base_dir, images_4D_file, name='labels.txt'):
     images_4D = np.genfromtxt(images_4D_file, dtype='str')
 
     with open(label_file, 'w') as the_file:
-        for root, dirs, files in os.walk(root_dir):
+        for root, dirs, files in os.walk(nifti_dir):
             for i_file in files:
                 if '.nii.gz' in i_file:
                     file_name = i_file.split('.nii.gz')[0].split('_')[0:-1]

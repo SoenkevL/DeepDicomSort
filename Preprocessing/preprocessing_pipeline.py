@@ -3,9 +3,13 @@ import yaml
 import DICOM_preparation_functions as DPF
 import NIFTI_preparation_functions as NPF
 import time
+import argparse
 
+parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder depening on what is specified in the config.yaml file.')
+parser.add_argument('configFile',metavar='c', required=True, help='pass here the config file path (from root or absolute) that should be used with your program')
+args = parser.parse_args()
 start_time = time.time()
-with open('./config.yaml', 'r') as ymlfile:
+with open(args.configFile, 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 x_image_size = cfg['data_preparation']['image_size_x']
