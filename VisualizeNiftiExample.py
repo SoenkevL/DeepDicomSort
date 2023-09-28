@@ -4,7 +4,7 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 
 
-dataframe_path =
+dataframe_path = ''
 imagePath = os.path.join(os.path.dirname(dataframe_path),'visualizations')
 dataframe = pd.read_csv(dataframe_path).head(10)
 for idx in range(len(dataframe)):
