@@ -49,7 +49,7 @@ print('Converting DICOMs to NIFTI....')
 nifti_folder = NPF.convert_DICOM_to_NIFTI(structured_dicom_folder)
 
 print('applying monai transforms and splitting images')
-nifti_slices_folder = PFM.preprocessImagesMonai('/trinity/home/r098375/DDS/ADNI/FirstTest/NIFTI',x_image_size,y_image_size,z_image_size,train_test_split=train_test_split)
+nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size,train_test_split=train_test_split)
 
 elapsed_time = time.time() - start_time
 
