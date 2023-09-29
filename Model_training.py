@@ -9,7 +9,7 @@ from Pytorch_monai.secrets import wandbkey
 import Pytorch_monai.Model_and_transforms as MF
 import Pytorch_monai.Utils as Utils
 import json
-import logging
+import argparse
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
@@ -174,7 +174,12 @@ def main(configFile='config.yaml'):
 
 
 if __name__=='__main__':
-    main('/trinity/home/r098375/DDS/ADNI/FirstTest/DATA/config_ADNI.yaml') #can specify file to different config than standard 'config.yaml' here as input argument
+    parser = argparse.ArgumentParser(description='This is Model training for the specified config parameters')
+    parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+    args = parser.parse_args()
+    configFile = args.configFile
+    main(configFile)
+    print('finished model training')
 
 
 

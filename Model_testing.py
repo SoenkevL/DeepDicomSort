@@ -12,10 +12,13 @@ import json
 import argparse
 
 
-def createMetaInfoString(modelFile, test_label_file, labelmap):
-    return f'model: {os.path.basename(modelFile)} \n \
-            test_file: {test_label_file} \n \
-            labelmap: {labelmap}'
+def createMetaInfoDict(modelFile, test_label_file, train_label_file, labelmap):
+    return {
+        'model': os.path.basename(modelFile),
+        'train_file': train_label_file,
+        'test_file': test_label_file,
+        'labelmap': labelmap
+    }
 
 def load_data(test_label_file):
     test_image_IDs, test_image_labels, _, extra_inputs = Utils.load_labels(test_label_file)
@@ -40,7 +43,7 @@ def load_data(test_label_file):
     ResultsFrame = pd.DataFrame(columns=cols)
     return ResultsFrame, test_loader
 
-def testing(model, test_loader, device, ResultsFrame, output_folder, model_name, meta_string):
+def testing(model, test_loader, device, ResultsFrame, output_folder, model_name, meta_dict):
     for datapoint in tqdm(test_loader):
         image = datapoint['image'].to(device=device)
         groundTruth = np.argmax(datapoint['label']).to('cpu').detach().numpy()
@@ -60,37 +63,35 @@ def testing(model, test_loader, device, ResultsFrame, output_folder, model_name,
 
     fileCounter=0
     out_file = os.path.join(output_folder, 'Predictions_' + model_name + '.csv')
-    out_meta_file = os.path.join(output_folder, 'Meta_info_' + model_name + '.txt')
+    out_meta_file = os.path.join(output_folder, 'Predictions_' + model_name + 'metaDict.json')
     while os.path.exists(out_file):
         out_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + '.csv')
-        out_meta_file = os.path.join(output_folder, f'Meta_info_copy{fileCounter}_' + model_name + '.txt')
+        out_meta_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + 'metaDict.json')
         fileCounter+=1
         if fileCounter==5:
             print('too many copies copy 5 will be overriden')
             break
     ResultsFrame.to_csv(out_file,index=False)
     with open(out_meta_file,'w') as f:
-        f.write(meta_string)
-    return ResultsFrame
+        json.dump(meta_dict,f)
+    return out_file
 
 
 
-def main():
-    parser = argparse.ArgumentParser(description='This is Model test for the specified config parameters')
-    parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
-    args = parser.parse_args()
-    with open(args.configFile, 'r') as ymlfile:
+def main(configFile):
+    with open(configFile, 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
+    train_label_file = cfg['training']['train_label_file']
     test_label_file = cfg['testing']['test_label_file']
-    model_file = cfg['model']['model_file']
     output_folder = cfg['testing']['output_folder']
+    model_file = cfg['model']['model_file']
     label_map_file = cfg['model']['label_map_file']
 
 
     with open(label_map_file) as labelmap:
         label_map = json.load(labelmap)
 
-    metaString = createMetaInfoString(modelFile=model_file, test_label_file=test_label_file, labelmap=label_map)
+    metaDict = createMetaInfoDict(modelFile=model_file, test_label_file=test_label_file, train_label_file=train_label_file, labelmap=label_map)
 
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
@@ -104,10 +105,15 @@ def main():
 
     ResultsFrame_empty, test_loader = load_data(test_label_file)
 
-    ResultsFrame = testing(model,test_loader,gpu,ResultsFrame_empty,output_folder,model_name,meta_string=metaString)
-
+    out_file = testing(model,test_loader,gpu,ResultsFrame_empty,output_folder,model_name,meta_dict=metaDict)
+    return out_file
     
 
     
 if __name__=='__main__':
-    main() #can specify file to different config than standard 'config.yaml' here as input argument
+    parser = argparse.ArgumentParser(description='This is Model test for the specified config parameters')
+    parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+    args = parser.parse_args()
+    configFile = args.configFile
+    main(configFile)
+    print('finished testing')
