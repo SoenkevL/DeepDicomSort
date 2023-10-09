@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 class Net(nn.Module): #first version ignores the additional 4d parameter but should be easy to add later
     def __init__(self, n_outputclasses=6):
         super(Net, self).__init__()
@@ -26,11 +27,11 @@ class Net(nn.Module): #first version ignores the additional 4d parameter but sho
         self.batchnorm64_6 = nn.BatchNorm2d(num_features=64)
         self.droput1 = nn.Dropout(p=0.4)
         self.droput2 = nn.Dropout(p=0.4)
-        self.fc1 = nn.Linear(in_features=1600, out_features=1024)
+        self.fc1 = nn.Linear(in_features=1601, out_features=1024)
         self.fc2 = nn.Linear(in_features=1024, out_features=n_outputclasses) #this needs to be adapted to the target classes
         self.flatten = nn.Flatten()
 
-    def forward(self, x):
+    def forward(self, x, extra):
         x = self.conv1(x)
         x = self.batchnorm32_1(x)
         x = self.relu1(x)
@@ -53,7 +54,7 @@ class Net(nn.Module): #first version ignores the additional 4d parameter but sho
         x = self.relu6(x)
         x = self.maxpool56(x)
         x = self.flatten(x)
-        x = self.droput1(x)
+        x = self.droput1(torch.cat((x,extra),1)) #possibly need to change the dimension along which convatenates
         x = self.fc1(x)
         x = F.relu(x)
         x = self.droput2(x)

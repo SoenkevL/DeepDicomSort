@@ -25,7 +25,7 @@ def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None):
     return model, optimizer, loss_function, rop
 
 
-def prepareData(train_label_file, batch_size,N_train_classes):
+def prepareData(train_label_file, batch_size,N_train_classes, crv, crt):
     # load imagefilenames and onehot encoded labels
     train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file,nb_classes=N_train_classes)
     print("Detected %d classes in training data" % N_train_classes)
@@ -48,7 +48,7 @@ def prepareData(train_label_file, batch_size,N_train_classes):
 
     #create data dicitionaries
     train_image_labels_noh = np.argmax(train_image_labels,axis=1)
-    train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
+    train_data_dict = [{"image":image_name,"label":label, 'extra':extra} for image_name, label, extra in zip(train_image_IDs,train_image_labels, extra_inputs)]
     train_data_dict, val_data_dict = train_test_split(train_data_dict,stratify=train_image_labels_noh,shuffle=True,random_state=42,test_size=0.1)
 
     # do some checks on the label distribution
@@ -58,8 +58,8 @@ def prepareData(train_label_file, batch_size,N_train_classes):
     print(np.unique(valLabelList,return_counts=True))
 
     #create datasets and loaders
-    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=0.5,num_workers=4,progress=True)
-    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=1,num_workers=4,progress=True)
+    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=crt,num_workers=4,progress=True)
+    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=crv,num_workers=4,progress=True)
     train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
     val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
     return train_loader, val_loader, trainTransforms, valTransforms
@@ -81,7 +81,8 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
             optimizer.zero_grad()
             images = batch['image'].float().to(device)
             labels = batch['label'].float().to(device)
-            output = model(images)
+            extraInputs = batch['extra'].float().to(device)
+            output = model(images, extraInputs)
             loss = loss_function(output,labels)
             epoch_loss += loss.item()
             loss.backward()
@@ -106,7 +107,8 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
             for batch in val_dataloader:
                 images = batch['image'].float().to(device)
                 labels = batch['label'].float().to(device)
-                output = model(images)
+                extraInputs = batch['extra'].float().to(device)
+                output = model(images, extraInputs)
                 loss = loss_function(output, labels)
                 val_epoch_loss += loss.item()
                 steps += 1
@@ -134,6 +136,8 @@ def main(configFile='config.yaml'):
     batch_size = cfg['network']['batch_size']
     nb_epoch = cfg['network']['nb_epoch']
     transfer_weights = cfg['training']['transfer_weights_path']
+    cache_rate_train = cfg['training']['cache_rate_train']
+    cache_rate_val = cfg['training']['cache_rate_val']
 
     ##label map
     with open(train_labelmap_file) as labelmap:
@@ -148,7 +152,7 @@ def main(configFile='config.yaml'):
 
     #initialize model and data
     model, optimizer, loss_function, rop = prepareModelAndCallbacks(N_train_classes,gpu,transfer_weights)
-    train_loader, val_loader, trainTransforms, valTransforms = prepareData(train_label_file=train_label_file,batch_size=batch_size,N_train_classes=N_train_classes)
+    train_loader, val_loader, trainTransforms, valTransforms = prepareData(train_label_file=train_label_file,batch_size=batch_size,N_train_classes=N_train_classes, crv=cache_rate_val, crt=cache_rate_train)
 
     ## setup logging to wandb
     wandb.login(key=wandbkey)
@@ -156,10 +160,10 @@ def main(configFile='config.yaml'):
         project='pytorch_DDS',
         name='training_'+model_name,
         config={
+            'train_label_file':train_label_file,
             'label_map':label_map,
             'loss function': str(loss_function),
             'optimizer': str(optimizer),
-            'lr': optimizer.param_groups[0]["lr"],
             'train_transform': Utils.from_compose_to_list(trainTransforms),
             'val_transform': Utils.from_compose_to_list(valTransforms),
             'train_batch_size': train_loader.batch_size,

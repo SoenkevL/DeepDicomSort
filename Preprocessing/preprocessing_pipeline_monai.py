@@ -18,7 +18,7 @@ y_image_size = cfg['data_preparation']['image_size_y']
 z_image_size = cfg['data_preparation']['image_size_z']
 DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
 train_test_split = cfg['data_preparation']['train_test_split']
-
+print(f'preprocessing {DICOM_FOLDER}')
 
 DEFAULT_SIZE = [x_image_size, y_image_size, z_image_size]
 
