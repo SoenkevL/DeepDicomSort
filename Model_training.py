@@ -66,7 +66,7 @@ def prepareData(train_label_file, batch_size,N_train_classes, crv, crt):
 
 
 #define training loop
-def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop, epochs, device='cpu', val_freq=1):
+def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop, epochs, model_name, output_folder, device='cpu', val_freq=1):
     print('\n\n------------------start training------------------------------\n\n')
     train_loss = []
     val_loss = []
@@ -117,6 +117,7 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
             if val_loss[-1] < best_val_loss:
                 best_val_loss = val_loss[-1]
                 bestModel = model
+                torch.save(model,os.path.join(output_folder,model_name+'.pt'))  
         #log the training process
         Utils.log_to_wandb(epoch,train_loss[-1],val_loss[-1])
 
@@ -172,8 +173,8 @@ def main(configFile='config.yaml'):
     )
     run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
 
-    trainloss, valloss, model = train(model,loss_function,train_loader,val_loader,optimizer,rop,nb_epoch,device=gpu,val_freq=1)
-    torch.save(model,os.path.join(output_folder,model_name+'.pt'))
+    trainloss, valloss, model = train(model,loss_function,train_loader,val_loader,optimizer,rop,nb_epoch,device=gpu,val_freq=1, model_name=model_name, output_folder=output_folder)
+    
 
 
 
