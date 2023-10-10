@@ -6,8 +6,6 @@ import numpy as np
 from sklearn.metrics import confusion_matrix, accuracy_score, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
-out_file = '.testing/acePredicitons/Predictions_DDS_model_epochs100_time_2023-09-28_08:28:09.239463/Predictions_DDS_model_epochs100_time_2023-09-28_08:28:09.239463.csv'
-
 def initialize(outfile):
     print('initializing')
     out_file = outfile
@@ -40,15 +38,14 @@ def majorityVote(frame,N_classes):
     certainty = np.max(votes)/framelength
     return pd.Series({'vote':majorityClass,'certainty':certainty})
 
-def processDataframe(out_file_folder, modelname, ResultFrame):
-    print('processing dataframe')
-    print(len(ResultFrame))
-    print(out_file_folder)
+def processDataframe(out_file_folder, modelname, ResultFrame, meta_dict):
     extraFrame = ResultFrame.apply(splitImageID, axis=1)
     ResultFrame = ResultFrame.merge(extraFrame, how='left', left_index=True, right_index=True, validate='one_to_one')
     NumSlicesPerClass=ResultFrame['slicenum'].nunique()
     ResultFrame = ResultFrame.set_index(['NIFTI_name'],drop=True)
-    VotingFrame = ResultFrame[['prediction']].groupby('NIFTI_name').apply(majorityVote,5)
+    labelmap = meta_dict['labelmap']
+    N_classes = len(labelmap)
+    VotingFrame = ResultFrame[['prediction']].groupby('NIFTI_name').apply(majorityVote,N_classes)
     FullResultFrame = ResultFrame.merge(VotingFrame,how='left',on='NIFTI_name')
     FullResultFrame = FullResultFrame.set_index('slicenum',append=True).sort_index()
     FullResultFrame.to_csv(os.path.join(out_file_folder,f'{modelname}_ensamblePredictions.csv'),index=True)
@@ -61,8 +58,9 @@ def createCF_matrix(FullResultFrame, NumSlicesPerClass, modelname, meta_dict, ce
     mc = confusion_matrix(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'],labels=NumericalLabels)
     ac = accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'])
     mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
-    mc_display.plot(cmap='rocket')
+    mc_display.plot(cmap='viridis')
     plt.grid(False)
+    plt.xticks(rotation=90)
     plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for indivdual slices')
     plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_individualSlices_heatmap.png'))
     #majority vote without certainty
@@ -70,25 +68,38 @@ def createCF_matrix(FullResultFrame, NumSlicesPerClass, modelname, meta_dict, ce
     mc = mc/NumSlicesPerClass
     ac = accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
     mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
-    mc_display.plot(cmap='rocket')
+    mc_display.plot(cmap='viridis')
     plt.grid(False)
+    plt.xticks(rotation=90)
     plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote')
     plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_majorityVote_heatmap.png'))
     if certainties:
+        c = certainties.split(',')
+        certainties=[]
+        for s in c:
+            s = s.replace('[','')
+            s = s.replace(']','')
+            s = s.replace(' ','')
+            try:
+                s = float(s)
+                certainties.append(s)
+            except:
+                print('something went wrong in putting in the certainties')
         for certaintyThreshhold in certainties:
-            mc = confusion_matrix(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold],labels=[0,1,2,3,4])
+            mc = confusion_matrix(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold],labels=NumericalLabels)
             mc = mc/NumSlicesPerClass
-            ac = accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
+            ac = accuracy_score(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold])
             # mc_display = ConfusionMatrixDisplay(mc,display_labels=['T1','T1_c','T2','FLAIR','seg'])
-            mc_display = ConfusionMatrixDisplay(mc,display_labels=['T1','T2','T2-FLAIR','PD','other'])
-            mc_display.plot(cmap='rocket')
+            mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
+            mc_display.plot(cmap='viridis')
             plt.grid(False)
+            plt.xticks(rotation=90)
             plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote with minimum certainty {certaintyThreshhold}')
             plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_majorityVote_withCertaintyOf{certaintyThreshhold}_heatmap.png'))
 
 def main(outfile, testing=False,certainties=[]):
     out_file_folder, modelname, ResultFrame_initial, meta_dict = initialize(outfile)
-    ResultFrame_processed, nslices = processDataframe(out_file_folder, modelname, ResultFrame_initial)
+    ResultFrame_processed, nslices = processDataframe(out_file_folder, modelname, ResultFrame_initial, meta_dict)
     if testing:
         createCF_matrix(ResultFrame_processed, NumSlicesPerClass=nslices, modelname=modelname, meta_dict=meta_dict, certainties=certainties)
 
@@ -98,12 +109,11 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='This is the analysis of the results created in the model testing/prediction')
     parser.add_argument('-o','--outfile', action='store',metavar='o', help='pass here the filepath that was created by ModelTesting/predicting')
     parser.add_argument('-t','--testing',action='store_true', help='Pass this flag if testing should be done instead of only predictiong \n if testing results like accuracy and confusion matrices should be computed')
-    parser.add_argument('--certainties',action='store',metavar='cert', default=[], help='specify an array of certainties that should be used for the testing has to be in (0,1). This needs to have the -t flag to be set')
+    parser.add_argument('--certainties',action='store',metavar='cert', default=[], help='specify a comma septerated string of certainties that should be used for the testing has to be in [0,1]. This needs to have the -t flag to be set')
     args = parser.parse_args()
     out_file = args.outfile
     testing = args.testing
     certainties = args.certainties
-    print(args)
     main(out_file, testing, certainties)
     print('finished analysing results')
 

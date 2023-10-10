@@ -20,8 +20,8 @@ def createMetaInfoDict(modelFile, test_label_file, train_label_file, labelmap):
         'labelmap': labelmap
     }
 
-def load_data(test_label_file):
-    test_image_IDs, test_image_labels, _, extra_inputs = Utils.load_labels(test_label_file)
+def load_data(test_label_file, labelmap):
+    test_image_IDs, test_image_labels, _, extra_inputs = Utils.load_labels(test_label_file,nb_classes=len(labelmap) )
 
     testTransforms = monai.transforms.Compose(
         [
@@ -31,7 +31,7 @@ def load_data(test_label_file):
         ]
     )
 
-    test_data_dict = [{"image":image_name,"label":label,"ID":image_name} for image_name, label in zip(test_image_IDs,test_image_labels)]
+    test_data_dict = [{"image":image_name,"label":label,"ID":image_name, 'extra':extra} for image_name, label, extra in zip(test_image_IDs,test_image_labels, extra_inputs)]
     test_ds = monai.data.CacheDataset(data=test_data_dict,transform=testTransforms,cache_rate=0.5,num_workers=4)
     test_loader = monai.data.DataLoader(test_ds,shuffle=False,num_workers=0,batch_size=1)
     # do some checks on the labels
@@ -45,10 +45,11 @@ def load_data(test_label_file):
 
 def testing(model, test_loader, device, ResultsFrame, output_folder, model_name, meta_dict):
     for datapoint in tqdm(test_loader):
-        image = datapoint['image'].to(device=device)
+        image = datapoint['image'].float().to(device=device)
+        extra = datapoint['extra'].float().to(device=device)
         groundTruth = np.argmax(datapoint['label']).to('cpu').detach().numpy()
         ID = datapoint['ID']
-        prediction_raw = model(image)
+        prediction_raw = model(image, extra)
         prediction = np.argmax(prediction_raw)
         predDict={'imageID':ID,'groundTruth':groundTruth,'prediction':prediction}
         predictionRawNp = prediction_raw.to('cpu').detach().numpy().squeeze(0)
@@ -88,9 +89,11 @@ def main(configFile):
     label_map_file = cfg['model']['label_map_file']
 
 
-    with open(label_map_file) as labelmap:
-        label_map = json.load(labelmap)
+    with open(label_map_file) as Lmap:
+        label_map = json.load(Lmap)
 
+    label_map = dict(label_map)
+    print(len(label_map))
     metaDict = createMetaInfoDict(modelFile=model_file, test_label_file=test_label_file, train_label_file=train_label_file, labelmap=label_map)
 
     if not os.path.exists(output_folder):
@@ -103,7 +106,7 @@ def main(configFile):
 
     model_name = os.path.basename(os.path.normpath(model_file)).split('.pt')[0]
 
-    ResultsFrame_empty, test_loader = load_data(test_label_file)
+    ResultsFrame_empty, test_loader = load_data(test_label_file, label_map)
 
     out_file = testing(model,test_loader,gpu,ResultsFrame_empty,output_folder,model_name,meta_dict=metaDict)
     return out_file
