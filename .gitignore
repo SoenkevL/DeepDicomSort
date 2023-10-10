@@ -108,6 +108,7 @@ venv.bak/
 config_BRATS.yaml
 .idea
 .training
+.csv
 *.yaml
 .testing
 Pytorch_monai/secrets.py
