@@ -1,4 +1,4 @@
-import NIFTI_preparation_functions as nifp
+import Preprocessing.NIFTI_preparation_functions as nifp
 import yaml
 from monai.transforms import  SaveImage
 from tqdm import tqdm
@@ -88,3 +88,6 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
         continue
     nifp.create_label_file(NIFIT_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
     return NIFIT_slices_direc
+
+
+

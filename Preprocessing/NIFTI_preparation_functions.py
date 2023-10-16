@@ -6,6 +6,51 @@ import shutil
 import subprocess
 from tqdm import tqdm
 import dicom2nifti
+from monai.data import FolderLayoutBase
+from monai.config import PathLike
+from monai.data.utils import create_file_basename
+from monai.transforms import LoadImage, SaveImage, EnsureChannelFirst
+
+
+
+class CustomFolderLayout(FolderLayoutBase):
+
+    def __init__(
+            self,
+            output_dir: PathLike,
+            postfix: str = "",
+            extension: str = "",
+            parent: bool = False,
+            makedirs: bool = False,
+            data_root_dir: PathLike = "",
+    ):
+        self.output_dir = output_dir
+        self.postfix = postfix
+        self.ext = extension
+        self.parent = parent
+        self.makedirs = makedirs
+        self.data_root_dir = data_root_dir
+
+
+    def filename(self, subject: PathLike = "subject", idx=None, **kwargs) -> PathLike:
+        if not '.dcm' in subject or '.nii.gz' in subject:
+            subject = subject + '.placeholder'
+        full_name = create_file_basename(
+            postfix=self.postfix,
+            input_file_name=subject,
+            folder_path=self.output_dir,
+            data_root_dir=self.data_root_dir,
+            separate_folder=self.parent,
+            patch_index=idx,
+            makedirs=self.makedirs,
+        )
+        print(f'full name: {full_name}')
+        for k, v in kwargs.items():
+            full_name += f"_{k}-{v}"
+        if self.ext is not None:
+            ext = f"{self.ext}"
+            full_name += f".{ext}" if ext and not ext.startswith(".") else f"{ext}"
+        return full_name
 
 def create_directory(dir):
     if not os.path.exists(dir):
@@ -65,18 +110,37 @@ def convert_DICOM_to_NIFTI_dicom2nifti(root_dir):
     for root, dirs, files in os.walk(root_dir):
         # if len(files) > 0 and 'MR' in root:
         if len(files) > 0:
-            create_directory(temp_dir)
+            print(f'{len(files)} at {root}')
             patient_ID = root.split(root_dir)[1]
             patient_ID = patient_ID.split(os.sep)[1]
 
             patient_out_folder = os.path.join(out_dir, patient_ID)
-            create_directory(patient_out_folder)
 
             sub_directory_names = root.split(os.path.join(root_dir, patient_ID))[1]
             sub_directory_names = sub_directory_names.split(os.sep)[1:]
 
             nifti_file_name = '__'.join(sub_directory_names)
-            dicom2nifti.convert_directory(root, os.path.join(patient_out_folder, nifti_file_name))
+            patient_out_folder = os.path.join(patient_out_folder, nifti_file_name)
+            create_directory(patient_out_folder)
+            print(f'nifti filename: {nifti_file_name}')
+            dicom2nifti.convert_directory(root, patient_out_folder)
+
+    return out_dir
+
+def convert_DICOM_to_NIFTI_monai(root_dir):
+    # Convert all dicom files in the directory to nifti
+    base_dir = os.path.dirname(os.path.normpath(root_dir))
+    out_dir = os.path.join(base_dir, 'NIFTI')
+
+    create_directory(out_dir)
+
+    for root, dirs, files in os.walk(root_dir):
+        # if len(files) > 0 and 'MR' in root:
+        if len(files) > 0:
+            image = LoadImage(image_only=False)(root)
+            Timage = EnsureChannelFirst()(image[0], image[1])
+            print(f'image shape: {Timage.shape}')
+            SaveImage(folder_layout=CustomFolderLayout(output_dir=out_dir,extension='.nii.gz',data_root_dir=root_dir, makedirs=True))(Timage, image[1])
 
     return out_dir
 
