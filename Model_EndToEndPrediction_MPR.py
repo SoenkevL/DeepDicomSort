@@ -3,9 +3,9 @@ import Model_predicting as Mp
 import Model_SortToBids as Msb
 import os
 import yaml
-import Preprocessing.DICOM_preparation_functions as DPF
-import Preprocessing.NIFTI_preparation_functions as NPF
-import Preprocessing.preprocessingFunctionMonai as PFM
+import Preprocessing_MPR.DICOM_preparation_functions_MPR as DPF
+import Preprocessing_MPR.NIFTI_preparation_functions_MPR as NPF
+import Preprocessing_MPR.preprocessingFunctionMonai_MPR as PFM
 import time
 import argparse
 

@@ -1,4 +1,4 @@
-import NIFTI_preparation_functions_MPR as nifp
+import Preprocessing_MPR.NIFTI_preparation_functions_MPR as nifp
 import yaml
 from monai.transforms import  SaveImage
 from tqdm import tqdm

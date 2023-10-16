@@ -4,8 +4,9 @@ import shutil
 from pydicom.errors import InvalidDicomError
 import numpy as np
 import multiprocessing
+from functools import  partial
 
-def copyToNewNameFolder(root, i_file_name, output_dir, move_files):
+def copyToNewNameFolder(i_file_name, root, output_dir, move_files):
     try:
         # Try, so that only dicom files get moved (pydicom will give an error otherwise)
         full_file_path = os.path.join(root, i_file_name)
@@ -23,12 +24,17 @@ def copyToNewNameFolder(root, i_file_name, output_dir, move_files):
                                            series_instance_UID)
 
         if not os.path.exists(dicom_output_folder):
-            os.makedirs(dicom_output_folder)
-
+            try:
+                os.makedirs(dicom_output_folder)
+            except:
+                pass
         if move_files:
             shutil.move(full_file_path, dicom_output_folder)
         else:
-            shutil.copy(full_file_path, dicom_output_folder)
+            try:
+                shutil.copy(full_file_path, dicom_output_folder)
+            except:
+                pass
     except InvalidDicomError:
         pass
 
@@ -37,19 +43,15 @@ def sort_DICOM_to_structured_folders(root_dir, move_files=False):
     # Into a subject folders, based on modality, date and sequence
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     output_dir = os.path.join(base_dir, 'DICOM_STRUCTURED')
-
     # To keep files seperate from following functions place in specific folder
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    output_dir_array = np.full(500, output_dir)
-    move_files_array = np.full(500, move_files)
     for root, dirs, files in os.walk(root_dir):
         # Check if there actually are any files in current folder
         file_len = len(files)
         if file_len > 0:
-            root_array = np.full(file_len, root)
             p = multiprocessing.Pool()
-            p.map((copyToNewNameFolder, root_array, files, output_dir_array, move_files_array))
+            p.map(partial(copyToNewNameFolder, root=root, output_dir=output_dir, move_files=move_files), files)
 
     return output_dir
 
