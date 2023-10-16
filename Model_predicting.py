@@ -45,7 +45,7 @@ def load_data(prediction_folder,label_map):
 
 def predicting(model, test_loader, device, ResultsFrame, output_folder, model_name, meta_dict):
     for datapoint in tqdm(test_loader):
-        image = datapoint['image'].to(device=device)
+        image = datapoint['image'].float().to(device=device)
         ID = datapoint['ID']
         prediction_raw = model(image)
         prediction = np.argmax(prediction_raw)

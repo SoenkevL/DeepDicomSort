@@ -18,7 +18,7 @@ def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None):
     if initWeights:
         model = Utils.updateModelDictForTransferLearning(initWeights,MF.Net(n_outputclasses=N_train_classes)).to(device=device)
     else:
-        model = MF.Net(n_outputclasses=N_train_classes).to(device=device)
+        model = MF.Net_withExtra(n_outputclasses=N_train_classes).to(device=device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.999),eps=1e-7,amsgrad=False)
     loss_function = torch.nn.CrossEntropyLoss()
     rop = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,factor=0.1,patience=3,min_lr=1e-6,verbose=1)
@@ -48,7 +48,7 @@ def prepareData(train_label_file, batch_size,N_train_classes, crv, crt):
 
     #create data dicitionaries
     train_image_labels_noh = np.argmax(train_image_labels,axis=1)
-    train_data_dict = [{"image":image_name,"label":label} for image_name, label, extra in zip(train_image_IDs,train_image_labels)]
+    train_data_dict = [{"image":image_name,"label":label, 'extra':extra} for image_name, label, extra in zip(train_image_IDs,train_image_labels, extra_inputs)]
     train_data_dict, val_data_dict = train_test_split(train_data_dict,stratify=train_image_labels_noh,shuffle=True,random_state=42,test_size=0.1)
 
     # do some checks on the label distribution
@@ -81,7 +81,8 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
             optimizer.zero_grad()
             images = batch['image'].float().to(device)
             labels = batch['label'].float().to(device)
-            output = model(images)
+            extraInputs = batch['extra'].float().to(device)
+            output = model(images, extraInputs)
             loss = loss_function(output,labels)
             epoch_loss += loss.item()
             loss.backward()
@@ -106,7 +107,8 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
             for batch in val_dataloader:
                 images = batch['image'].float().to(device)
                 labels = batch['label'].float().to(device)
-                output = model(images)
+                extraInputs = batch['extra'].float().to(device)
+                output = model(images, extraInputs)
                 loss = loss_function(output, labels)
                 val_epoch_loss += loss.item()
                 steps += 1
@@ -115,13 +117,12 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
             if val_loss[-1] < best_val_loss:
                 best_val_loss = val_loss[-1]
                 bestModel = model
-                bestModelPath = os.path.join(output_folder,model_name+'.pt')
-                torch.save(model,bestModelPath)
+                torch.save(model,os.path.join(output_folder,model_name+'.pt'))  
         #log the training process
         Utils.log_to_wandb(epoch,train_loss[-1],val_loss[-1])
 
     print(f'finished training successfully with final validation loss of {val_loss[-1]}')
-    return train_loss, val_loss, bestModelPath
+    return train_loss, val_loss, bestModel
 
 
 
@@ -172,8 +173,8 @@ def main(configFile='config.yaml'):
     )
     run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
 
-    trainloss, valloss, modelPath = train(model,loss_function,train_loader,val_loader,optimizer,rop,nb_epoch,device=gpu,val_freq=1, model_name=model_name, output_folder=output_folder)
-    return trainloss, valloss, modelPath
+    trainloss, valloss, model = train(model,loss_function,train_loader,val_loader,optimizer,rop,nb_epoch,device=gpu,val_freq=1, model_name=model_name, output_folder=output_folder)
+    
 
 
 
@@ -182,8 +183,8 @@ if __name__=='__main__':
     parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
     args = parser.parse_args()
     configFile = args.configFile
-    trainloss, valloss, modelPath = main(configFile)
-    print(f'finished model training and saved best Model to: {modelPath} \n with min training loss of {np.min(trainloss)} and min val loss of {np.min(valloss)}')
+    main(configFile)
+    print('finished model training')
 
 
 

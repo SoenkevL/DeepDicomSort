@@ -1,8 +1,11 @@
 import os
+import Model_predicting as Mp
+import Model_SortToBids as Msb
+import os
 import yaml
-import DICOM_preparation_functions as DPF
-import NIFTI_preparation_functions as NPF
-import preprocessingFunctionMonai as PFM
+import Preprocessing.DICOM_preparation_functions as DPF
+import Preprocessing.NIFTI_preparation_functions as NPF
+import Preprocessing.preprocessingFunctionMonai as PFM
 import time
 import argparse
 
@@ -17,6 +20,7 @@ x_image_size = cfg['data_preparation']['image_size_x']
 y_image_size = cfg['data_preparation']['image_size_y']
 z_image_size = cfg['data_preparation']['image_size_z']
 DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
+train_test_split = cfg['data_preparation']['train_test_split']
 print(f'preprocessing {DICOM_FOLDER}')
 
 DEFAULT_SIZE = [x_image_size, y_image_size, z_image_size]
@@ -49,7 +53,26 @@ nifti_folder = NPF.convert_DICOM_to_NIFTI(structured_dicom_folder)
 
 print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size,train_test_split=train_test_split)
+cfg['post_processing']['prediction_folder'] = nifti_slices_folder
 
+with open(args.configFile,'w') as ymlfile:
+    yaml.safe_dump(cfg, ymlfile)
 elapsed_time = time.time() - start_time
-
 print(elapsed_time)
+print('finished preprocessing, start predicting')
+
+
+start_time = time.time()
+predictionFile = Mp.main(args.configFile) #I could use here model testing with testing=false if I want to go from the empty label file instead of the folder
+cfg['post_processing']['prediction_file'] = predictionFile
+with open(args.configFile,'w') as ymlfile:
+    yaml.safe_dump(cfg, ymlfile)
+elapsed_time = time.time() - start_time
+print(elapsed_time)
+print('finished predicting, moving files')
+Msb.main(args.configFile) #this is still pretty much from the original so it needs some tweeking to be inline with the rest
+print('all files moved, pipeline finished successfully')
+
+
+
+

@@ -5,7 +5,6 @@ from glob import glob
 import shutil
 import subprocess
 from tqdm import tqdm
-import dicom2nifti
 
 def create_directory(dir):
     if not os.path.exists(dir):
@@ -17,7 +16,7 @@ def delete_directory(dir):
         shutil.rmtree(dir)
 
 
-def convert_DICOM_to_NIFTI_dcm2niix(root_dir):
+def convert_DICOM_to_NIFTI(root_dir):
     # Convert all dicom files in the directory to nifti
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
@@ -53,33 +52,6 @@ def convert_DICOM_to_NIFTI_dcm2niix(root_dir):
 
     return out_dir
 
-def convert_DICOM_to_NIFTI_dicom2nifti(root_dir):
-    # Convert all dicom files in the directory to nifti
-    base_dir = os.path.dirname(os.path.normpath(root_dir))
-    out_dir = os.path.join(base_dir, 'NIFTI')
-    temp_dir = os.path.join(base_dir, 'TEMP')
-
-    create_directory(out_dir)
-    delete_directory(temp_dir)
-
-    for root, dirs, files in os.walk(root_dir):
-        # if len(files) > 0 and 'MR' in root:
-        if len(files) > 0:
-            create_directory(temp_dir)
-            patient_ID = root.split(root_dir)[1]
-            patient_ID = patient_ID.split(os.sep)[1]
-
-            patient_out_folder = os.path.join(out_dir, patient_ID)
-            create_directory(patient_out_folder)
-
-            sub_directory_names = root.split(os.path.join(root_dir, patient_ID))[1]
-            sub_directory_names = sub_directory_names.split(os.sep)[1:]
-
-            nifti_file_name = '__'.join(sub_directory_names)
-            dicom2nifti.convert_directory(root, os.path.join(patient_out_folder, nifti_file_name))
-
-    return out_dir
-
 
 def move_RGB_images(root_dir, fslval_bin):
     base_dir = os.path.dirname(os.path.normpath(root_dir))
@@ -107,8 +79,8 @@ def extract_4D_images(root_dir):
     out_4D_file = os.path.join(data_dir, 'Scans_4D.txt')
 
     with open(out_4D_file, 'w') as the_file:
-        for root, dirs, files in tqdm(os.walk(root_dir)):
-            for i_file in files:
+        for root, dirs, files in os.walk(root_dir):
+            for i_file in tqdm(files):
                 if '.nii.gz' in i_file:
                     image_file = os.path.join(root, i_file)
 

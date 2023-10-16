@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import wandb
 import monai
+import pandas as pd
 def chooseDevice(verbose=False):
     #returns the gpu with most free memory currently
     if torch.cuda.is_available():
@@ -104,3 +105,15 @@ def updateModelDictForTransferLearning(dictPath,model): #works only for the two 
             model_sd[key] = transfer_sd[key]
     model.load_state_dict(model_sd)
     return model
+
+
+def LoadLabelFile(path):
+    return pd.read_csv(path,names=['ID','label','extra'],sep='\t', dtype={'ID':str,'label':int,'extra':int})
+
+def extractNiftiFilepathAndSlicenum(df):
+    ID = df['ID']
+    split = ID.rsplit('__s',1)
+    NiftiPath = split[0]
+    NiftiPath = NiftiPath.replace('NIFTI_SLICES','NIFTI')+'.nii.gz'
+    slicenum = int(split[1].split('.nii.gz')[0])
+    return pd.Series({'NiftiPath':NiftiPath, 'slicenum':slicenum, 'ID':ID})

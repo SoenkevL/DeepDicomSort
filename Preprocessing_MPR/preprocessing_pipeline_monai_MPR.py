@@ -1,8 +1,8 @@
 import os
 import yaml
-import DICOM_preparation_functions as DPF
-import NIFTI_preparation_functions as NPF
-import preprocessingFunctionMonai as PFM
+import DICOM_preparation_functions_MPR as DPF
+import NIFTI_preparation_functions_MPR as NPF
+import preprocessingFunctionMonai_MPR as PFM
 import time
 import argparse
 
