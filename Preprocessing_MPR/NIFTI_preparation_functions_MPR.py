@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import SimpleITK as sitk
 import numpy as np
@@ -42,7 +43,6 @@ class CustomFolderLayout(FolderLayoutBase):
             patch_index=idx,
             makedirs=self.makedirs,
         )
-        print(f'full name: {full_name}')
         for k, v in kwargs.items():
             full_name += f"_{k}-{v}"
         if self.ext is not None:
@@ -108,7 +108,6 @@ def convert_DICOM_to_NIFTI_monai(root_dir):
         if len(files) > 0:
             image = LoadImage(image_only=False)(root)
             Timage = EnsureChannelFirst()(image[0], image[1])
-            print(f'image shape: {Timage.shape}')
             SaveImage(folder_layout=CustomFolderLayout(output_dir=out_dir,extension='.nii.gz',data_root_dir=root_dir, makedirs=True))(Timage, image[1])
 
     return out_dir
@@ -132,15 +131,16 @@ def move_RGB_images(root_dir, fslval_bin):
     return
 
 
+
+
 def extract_4D_images(root_dir):
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     data_dir = os.path.join(base_dir, 'DATA')
     create_directory(data_dir)
     out_4D_file = os.path.join(data_dir, 'Scans_4D.txt')
-
     with open(out_4D_file, 'w') as the_file:
-        for root, dirs, files in os.walk(root_dir):
-            for i_file in tqdm(files):
+        for root, dirs, files in tqdm(os.walk(root_dir)):
+            for i_file in files:
                 if '.nii.gz' in i_file:
                     image_file = os.path.join(root, i_file)
 
@@ -160,7 +160,6 @@ def extract_4D_images(root_dir):
 
 
 def reorient_to_std(root_dir, fslreorient_bin):
-    print('reorient')
     for root, dirs, files in os.walk(root_dir):
         for i_file in tqdm(files):
             if '.nii.gz' in i_file:

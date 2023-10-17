@@ -46,11 +46,11 @@ def sort_DICOM_to_structured_folders(root_dir, move_files=False):
     # To keep files seperate from following functions place in specific folder
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+    p = multiprocessing.Pool()
     for root, dirs, files in os.walk(root_dir):
         # Check if there actually are any files in current folder
         file_len = len(files)
         if file_len > 0:
-            p = multiprocessing.Pool()
             p.map(partial(copyToNewNameFolder, root=root, output_dir=output_dir, move_files=move_files), files)
 
     return output_dir
@@ -66,57 +66,59 @@ def make_filepaths_safe_for_linux(root_dir):
         for i_file in files:
             os.rename(os.path.join(root, i_file), os.path.join(root, i_file.replace(' ', '_')))
 
+def createHashList(i_file, root):
+    i_dicom_file = os.path.join(root, i_file)
+    try:
+        temp_dicom = pydicom.read_file(i_dicom_file)
+    except InvalidDicomError:
+        return None
+
+    # Fields to split on
+    if (0x28, 0x10) in temp_dicom:
+        N_rows = temp_dicom[0x28, 0x10].value
+    else:
+        N_rows = -1
+    if (0x28, 0x11) in temp_dicom:
+        N_columns = temp_dicom[0x28, 0x11].value
+    else:
+        N_columns = -1
+
+    # some very small deviations can be expected, so we round
+    if (0x28, 0x30) in temp_dicom:
+        pixel_spacing = temp_dicom[0x28, 0x30].value
+        if not isinstance(pixel_spacing, str):
+            pixel_spacing = np.round(pixel_spacing, decimals=6)
+        else:
+            pixel_spacing = [-1, -1]
+    else:
+        pixel_spacing = [-1, -1]
+    if 'RepetitionTime' in temp_dicom:
+        try:
+            repetition_time = float(temp_dicom[0x18, 0x80].value)
+            repetition_time = np.round(repetition_time, decimals=6)
+        except:
+            repetition_time = -1
+    else:
+        repetition_time = -1
+    try:
+        echo_time = np.round(temp_dicom[0x18, 0x81].value, decimals=6)
+    except:
+        echo_time = -1
+
+    diff_tuple = (N_rows, N_columns, pixel_spacing[0], pixel_spacing[1],
+                  repetition_time, echo_time)
+    hash_tuple = hash(diff_tuple)
+
+    return hash_tuple
+
 
 def split_in_series(root_dir):
     # If multiple DICOM series are in the same folder
     # This function will split them up
+    p = multiprocessing.Pool()
     for root, dirs, files in os.walk(root_dir):
         if len(files) > 0:
-            hash_list = list()
-            for i_file in files:
-                i_dicom_file = os.path.join(root, i_file)
-                try:
-                    temp_dicom = pydicom.read_file(i_dicom_file)
-                except InvalidDicomError:
-                    continue
-
-                # Fields to split on
-                if (0x28, 0x10) in temp_dicom:
-                    N_rows = temp_dicom[0x28, 0x10].value
-                else:
-                    N_rows = -1
-                if (0x28, 0x11) in temp_dicom:
-                    N_columns = temp_dicom[0x28, 0x11].value
-                else:
-                    N_columns = -1
-
-                # some very small deviations can be expected, so we round
-                if (0x28, 0x30) in temp_dicom:
-                    pixel_spacing = temp_dicom[0x28, 0x30].value
-                    if not isinstance(pixel_spacing, str):
-                        pixel_spacing = np.round(pixel_spacing, decimals=6)
-                    else:
-                        pixel_spacing = [-1, -1]
-                else:
-                    pixel_spacing = [-1, -1]
-                if 'RepetitionTime' in temp_dicom:
-                    try:
-                        repetition_time = float(temp_dicom[0x18, 0x80].value)
-                        repetition_time = np.round(repetition_time, decimals=6)
-                    except:
-                        repetition_time = -1
-                else:
-                    repetition_time = -1
-                try:
-                    echo_time = np.round(temp_dicom[0x18, 0x81].value, decimals=6)
-                except:
-                    echo_time = -1
-
-                diff_tuple = (N_rows, N_columns, pixel_spacing[0], pixel_spacing[1],
-                              repetition_time, echo_time)
-                hash_tuple = hash(diff_tuple)
-
-                hash_list.append(hash_tuple)
+            hash_list = p.map(partial(createHashList, root=root), files)
 
             if len(set(hash_list)) > 1:
                 N_sets = len(set(hash_list))

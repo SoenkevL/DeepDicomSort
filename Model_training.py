@@ -48,7 +48,7 @@ def prepareData(train_label_file, batch_size,N_train_classes, crv, crt):
 
     #create data dicitionaries
     train_image_labels_noh = np.argmax(train_image_labels,axis=1)
-    train_data_dict = [{"image":image_name,"label":label} for image_name, label, extra in zip(train_image_IDs,train_image_labels)]
+    train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
     train_data_dict, val_data_dict = train_test_split(train_data_dict,stratify=train_image_labels_noh,shuffle=True,random_state=42,test_size=0.1)
 
     # do some checks on the label distribution
@@ -95,7 +95,7 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
             train_loss_diff = np.abs(train_loss[-6])-np.abs(np.min(train_loss[-5:]))
             if train_loss_diff < 0.0001:
                 print(f'finished training early with final training loss of {train_loss[-1]} and a loss difference of {train_loss_diff}')
-                return train_loss, val_loss, bestModel
+                return train_loss, val_loss, bestModelPath
         #end of early stopping
 
         # validation loop
@@ -116,7 +116,7 @@ def train(model, loss_function, train_dataloader, val_dataloader, optimizer, rop
                 best_val_loss = val_loss[-1]
                 bestModel = model
                 bestModelPath = os.path.join(output_folder,model_name+'.pt')
-                torch.save(model,bestModelPath)
+                torch.save(bestModel,bestModelPath)
         #log the training process
         Utils.log_to_wandb(epoch,train_loss[-1],val_loss[-1])
 

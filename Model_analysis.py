@@ -51,7 +51,7 @@ def processDataframe(out_file_folder, modelname, ResultFrame, meta_dict):
     FullResultFrame.to_csv(os.path.join(out_file_folder,f'{modelname}_ensamblePredictions.csv'),index=True)
     return FullResultFrame, NumSlicesPerClass
 
-def createCF_matrix(FullResultFrame, NumSlicesPerClass, modelname, meta_dict, certainties=[]):
+def createCF_matrix(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_dict, certainties=[]):
     StringLabels = list(meta_dict['labelmap'].keys())
     NumericalLabels = list(meta_dict['labelmap'].values())
     #results by slice basis
@@ -101,7 +101,7 @@ def main(outfile, testing=False,certainties=[]):
     out_file_folder, modelname, ResultFrame_initial, meta_dict = initialize(outfile)
     ResultFrame_processed, nslices = processDataframe(out_file_folder, modelname, ResultFrame_initial, meta_dict)
     if testing:
-        createCF_matrix(ResultFrame_processed, NumSlicesPerClass=nslices, modelname=modelname, meta_dict=meta_dict, certainties=certainties)
+        createCF_matrix(ResultFrame_processed, outfile, NumSlicesPerClass=nslices, modelname=modelname, meta_dict=meta_dict, certainties=certainties)
 
 
 

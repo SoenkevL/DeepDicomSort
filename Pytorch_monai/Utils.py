@@ -100,11 +100,19 @@ def from_list_to_compose(transform_list):
 def updateModelDictForTransferLearning(dictPath,model): #works only for the two model provided by the author and only updated the weights of specific layers in hope to speed up the training process
     model_sd = model.state_dict()
     transfer_sd = torch.load(dictPath)
-    for key in model_sd.keys():
-        if key in transfer_sd.keys():
-            model_sd[key] = transfer_sd[key]
-    model.load_state_dict(model_sd)
-    return model
+    try:
+        for key in model_sd.keys():
+            if key in transfer_sd.keys() and transfer_sd[key].shape==model_sd[key].shape:
+                model_sd[key] = transfer_sd[key]
+        model.load_state_dict(model_sd)
+    except AttributeError:
+        transfer_sd = transfer_sd.state_dict()
+        for key in model_sd.keys():
+            if key in transfer_sd.keys() and transfer_sd[key].shape==model_sd[key].shape:
+                model_sd[key] = transfer_sd[key]
+        model.load_state_dict(model_sd)
+    finally:
+        return model
 
 
 def LoadLabelFile(path):

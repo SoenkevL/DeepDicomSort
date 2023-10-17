@@ -17,7 +17,7 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
     if not os.path.exists(NIFIT_slices_direc):
         os.mkdir(NIFIT_slices_direc)
 
-    print('>>> extracting 4d info')
+    print('\t\t>>>  extracting 4d info  <<<')
     images_4D_file = nifp.extract_4D_images(NIFTI_direc) #could be multiprocessed
 
     filepaths = []
@@ -27,7 +27,8 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
             if '.nii.gz' in i_file:
                 filepaths.append(os.path.join(root,i_file))
                 filenames.append(i_file.split('.nii.gz')[0])
-    print(len(filepaths))
+    print('\t\t>>>  create data set  <<<')
+    print(f'{len(filepaths)} nifti images found in the dataset')
     dataset = [{'image':filepath,'label':filename} for filepath, filename in zip(filepaths,filenames)]
     
 
@@ -79,10 +80,11 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
 
     ds = monai.data.Dataset(dataset, dataTransform)
     dl = monai.data.DataLoader(ds, batch_size=8, num_workers=4)
-    print('>>> create data set')
+    print('\t\t>>>  applying transforms and saving slices <<<')
     counter = -1
     for i in tqdm(dl):
         counter+=1
         continue
+    print('\t\t>>>  create labels  <<<')
     nifp.create_label_file(NIFIT_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
     return NIFIT_slices_direc
