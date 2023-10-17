@@ -3,6 +3,9 @@ import numpy as np
 import wandb
 import monai
 import pandas as pd
+import os
+import shutil
+
 def chooseDevice(verbose=False):
     #returns the gpu with most free memory currently
     if torch.cuda.is_available():
@@ -125,3 +128,11 @@ def extractNiftiFilepathAndSlicenum(df):
     NiftiPath = NiftiPath.replace('NIFTI_SLICES','NIFTI')+'.nii.gz'
     slicenum = int(split[1].split('.nii.gz')[0])
     return pd.Series({'NiftiPath':NiftiPath, 'slicenum':slicenum, 'ID':ID})
+
+def protectConfig(configFile):
+    filename = os.path.basename(configFile)
+    filepath = os.path.dirname(configFile)
+    filenameCopy = filename.split('.yaml')[0]+'_copy.yaml'
+    configFile_copy = os.path.join(filepath, filenameCopy)
+    shutil.copy(configFile, configFile_copy)
+    return configFile_copy

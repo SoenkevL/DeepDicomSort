@@ -8,12 +8,14 @@ import Preprocessing.NIFTI_preparation_functions as NPF
 import Preprocessing.preprocessingFunctionMonai as PFM
 import time
 import argparse
+from Pytorch_monai.Utils import  protectConfig
 
 parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder depening on what is specified in the config.yaml file.')
 parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
 args = parser.parse_args()
 start_time = time.time()
-with open(args.configFile, 'r') as ymlfile:
+config = protectConfig(args.configFile)
+with open(config, 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 x_image_size = cfg['data_preparation']['image_size_x']
@@ -54,14 +56,14 @@ print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size)
 cfg['post_processing']['prediction_folder'] = nifti_slices_folder
 
-with open(args.configFile,'w') as ymlfile:
+with open(config,'w') as ymlfile:
     yaml.safe_dump(cfg, ymlfile)
 print('finished preprocessing, start predicting')
 
 
 predictionFile = Mp.main(args.configFile) #I could use here model testing with testing=false if I want to go from the empty label file instead of the folder
 cfg['post_processing']['prediction_file'] = predictionFile
-with open(args.configFile,'w') as ymlfile:
+with open(config,'w') as ymlfile:
     yaml.safe_dump(cfg, ymlfile)
 print('finished predicting, moving files')
 elapsed_time = time.time() - start_time

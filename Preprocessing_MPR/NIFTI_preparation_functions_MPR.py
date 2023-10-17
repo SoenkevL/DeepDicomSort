@@ -60,7 +60,7 @@ def delete_directory(dir):
         shutil.rmtree(dir)
 
 
-def convert_DICOM_to_NIFTI(root_dir):
+def convert_DICOM_to_NIFTI_dcm2niix(root_dir):
     # Convert all dicom files in the directory to nifti
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
@@ -106,10 +106,13 @@ def convert_DICOM_to_NIFTI_monai(root_dir):
     for root, dirs, files in os.walk(root_dir):
         # if len(files) > 0 and 'MR' in root:
         if len(files) > 0:
-            image = LoadImage(image_only=False)(root)
-            Timage = EnsureChannelFirst()(image[0], image[1])
-            SaveImage(folder_layout=CustomFolderLayout(output_dir=out_dir,extension='.nii.gz',data_root_dir=root_dir, makedirs=True))(Timage, image[1])
-
+            try:
+                image = LoadImage(image_only=False)(root)
+                Timage = EnsureChannelFirst()(image[0], image[1])
+                SaveImage(folder_layout=CustomFolderLayout(output_dir=out_dir,extension='.nii.gz',data_root_dir=root_dir, makedirs=True),squeeze_end_dims=True)(Timage, image[1])
+            except:
+                print(f'failed to convert dicomFolder: {root}')
+                continue
     return out_dir
 
 def move_RGB_images(root_dir, fslval_bin):
