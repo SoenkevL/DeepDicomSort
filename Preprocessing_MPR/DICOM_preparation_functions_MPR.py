@@ -1,3 +1,4 @@
+import pandas as pd
 import pydicom
 import os
 import shutil
@@ -7,9 +8,9 @@ import multiprocessing
 from functools import  partial
 
 def copyToNewNameFolder(i_file_name, root, output_dir, move_files):
+    full_file_path = os.path.join(root, i_file_name)
     try:
         # Try, so that only dicom files get moved (pydicom will give an error otherwise)
-        full_file_path = os.path.join(root, i_file_name)
         dicom_data = pydicom.read_file(full_file_path)
 
         patient_ID = dicom_data.PatientID
@@ -30,19 +31,22 @@ def copyToNewNameFolder(i_file_name, root, output_dir, move_files):
                 pass
         if move_files:
             shutil.move(full_file_path, dicom_output_folder)
+            return dicom_output_folder
         else:
             try:
                 shutil.copy(full_file_path, dicom_output_folder)
+                return dicom_output_folder
             except:
                 pass
     except InvalidDicomError:
         pass
 
-def sort_DICOM_to_structured_folders(root_dir, move_files=False):
+def sort_DICOM_to_structured_folders(root_dir, df_path, move_files=False):
     # Given a folder (with possible nested subfolders) of DICOMS, this function will sort all dicoms
     # Into a subject folders, based on modality, date and sequence
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     output_dir = os.path.join(base_dir, 'DICOM_STRUCTURED')
+    dataPathList = []
     # To keep files seperate from following functions place in specific folder
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -51,8 +55,12 @@ def sort_DICOM_to_structured_folders(root_dir, move_files=False):
         # Check if there actually are any files in current folder
         file_len = len(files)
         if file_len > 0:
-            p.map(partial(copyToNewNameFolder, root=root, output_dir=output_dir, move_files=move_files), files)
-
+            tempList = p.map(partial(copyToNewNameFolder, root=root, output_dir=output_dir, move_files=move_files), files)
+            structured_folders = set(tempList)
+            for element in structured_folders:
+                dataPathList.append([root, element])
+    df = pd.DataFrame(dataPathList, columns=['originPath','structuredDicomPath'])
+    df.to_csv(df_path, index=False)
     return output_dir
 
 
@@ -112,10 +120,11 @@ def createHashList(i_file, root):
     return hash_tuple
 
 
-def split_in_series(root_dir):
+def split_in_series(root_dir, df_path):
     # If multiple DICOM series are in the same folder
     # This function will split them up
     p = multiprocessing.Pool()
+    splitedSeries = []
     for root, dirs, files in os.walk(root_dir):
         if len(files) > 0:
             hash_list = p.map(partial(createHashList, root=root), files)
@@ -128,6 +137,7 @@ def split_in_series(root_dir):
                 scan_name = os.path.basename(os.path.normpath(root))
                 for i_set in i_sets:
                     new_scan_dir = os.path.join(upper_folder, scan_name + '_Scan_' + str(i_set))
+                    splitedSeries.append([root, new_scan_dir])
                     if not os.path.exists(new_scan_dir):
                         os.makedirs(new_scan_dir)
 
@@ -137,3 +147,8 @@ def split_in_series(root_dir):
                     new_scan_dir = os.path.join(upper_folder, scan_name + '_Scan_' + str(i_sets[index_type]))
                     shutil.move(os.path.join(root, i_dicom), new_scan_dir)
                 os.rmdir(root)
+    if splitedSeries:
+        tempFrame = pd.DataFrame(splitedSeries, columns=['structuredDicomPath','splitted_structuredDicomPath'])
+        df = pd.read_csv(df_path)
+        df = df.merge(tempFrame, how='left', on='structuredDicomPath')
+        df.to_csv(df_path, index=False)

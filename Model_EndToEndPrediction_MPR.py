@@ -22,6 +22,7 @@ x_image_size = cfg['data_preparation']['image_size_x']
 y_image_size = cfg['data_preparation']['image_size_y']
 z_image_size = cfg['data_preparation']['image_size_z']
 DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
+df_path = cfg['preprocessing']['df_path']
 print(f'preprocessing {DICOM_FOLDER}')
 
 DEFAULT_SIZE = [x_image_size, y_image_size, z_image_size]
@@ -38,7 +39,7 @@ def is_odd(number):
 
 print(f'number of elements in dicom folder:{len(os.listdir(DICOM_FOLDER))}')
 print('Sorting DICOM to structured folders....')
-structured_dicom_folder = DPF.sort_DICOM_to_structured_folders(DICOM_FOLDER)
+structured_dicom_folder = DPF.sort_DICOM_to_structured_folders(DICOM_FOLDER, df_path)
 
 # Turn the following step on if you have problems running the pipeline
 # It will replaces spaces in the path names, which can sometimes
@@ -47,10 +48,10 @@ structured_dicom_folder = DPF.sort_DICOM_to_structured_folders(DICOM_FOLDER)
 # DPF.make_filepaths_safe_for_linux(structured_dicom_folder)
 #
 print('Checking and splitting for double scans in folders....')
-DPF.split_in_series(structured_dicom_folder)
+DPF.split_in_series(structured_dicom_folder, df_path)
 
-print('Converting DICOMs to NIFTI....') #will maybe be exchanged later on
-nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder)
+print('Converting DICOMs to NIFTI....')
+nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder, df_path)
 
 print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size)
