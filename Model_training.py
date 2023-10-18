@@ -58,10 +58,10 @@ def prepareData(train_label_file, batch_size,N_train_classes, crv, crt):
     print(np.unique(valLabelList,return_counts=True))
 
     #create datasets and loaders
-    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=crt,num_workers=4,progress=True)
-    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=crv,num_workers=4,progress=True)
-    train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
-    val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
+    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=crt,num_workers=6,progress=True)
+    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=crv,num_workers=6,progress=True)
+    train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=2)
+    val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=2)
     return train_loader, val_loader, trainTransforms, valTransforms
 
 
