@@ -1,7 +1,5 @@
 import NIFTI_preparation_functions_MPR as nifp
-import yaml
 from monai.transforms import  SaveImage
-from tqdm import tqdm
 import monai
 import os
 import numpy as np
@@ -83,9 +81,15 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
     dl = monai.data.DataLoader(ds, batch_size=8, num_workers=multiprocessing.cpu_count()-2)
     print('\t\t>>>  applying transforms and saving slices <<<')
     counter = -1
-    for i in tqdm(dl):
-        counter+=1
-        continue
+    # for i in tqdm(dl):
+    #     counter+=1
+    #     continue
+    iterloader = iter(dl)
+    for i in range(len(iterloader)):
+        try:
+            _ = next(iterloader)
+        except:
+            print(f'could not convert image {i}')
     print('\t\t>>>  create labels  <<<')
     nifp.create_label_file(NIFIT_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
     return NIFIT_slices_direc
