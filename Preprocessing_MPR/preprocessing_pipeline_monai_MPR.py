@@ -3,9 +3,17 @@ import yaml
 import DICOM_preparation_functions_MPR as DPF
 import NIFTI_preparation_functions_MPR as NPF
 import preprocessingFunctionMonai_MPR as PFM
-from Pytorch_monai.Utils import protectConfig
 import time
 import argparse
+import shutil
+
+def protectConfig(configFile):
+    filename = os.path.basename(configFile)
+    filepath = os.path.dirname(configFile)
+    filenameCopy = filename.split('.yaml')[0]+'_copy.yaml'
+    configFile_copy = os.path.join(filepath, filenameCopy)
+    shutil.copy(configFile, configFile_copy)
+    return configFile_copy
 
 parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder depening on what is specified in the config.yaml file.')
 parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
