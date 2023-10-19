@@ -1,10 +1,11 @@
-import Preprocessing_MPR.NIFTI_preparation_functions_MPR as nifp
+import NIFTI_preparation_functions_MPR as nifp
 import yaml
 from monai.transforms import  SaveImage
 from tqdm import tqdm
 import monai
 import os
 import numpy as np
+import multiprocessing
 
 def preprocessImagesMonai(niftiDirec, x, y, z):
     root_dataFolder = os.path.split(niftiDirec)[0]
@@ -79,7 +80,7 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
     )
 
     ds = monai.data.Dataset(dataset, dataTransform)
-    dl = monai.data.DataLoader(ds, batch_size=8, num_workers=4)
+    dl = monai.data.DataLoader(ds, batch_size=8, num_workers=multiprocessing.cpu_count()-2)
     print('\t\t>>>  applying transforms and saving slices <<<')
     counter = -1
     for i in tqdm(dl):
