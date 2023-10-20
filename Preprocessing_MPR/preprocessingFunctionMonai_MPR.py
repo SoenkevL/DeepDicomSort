@@ -80,10 +80,6 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
     ds = monai.data.Dataset(dataset, dataTransform)
     dl = monai.data.DataLoader(ds, batch_size=8, num_workers=multiprocessing.cpu_count()-2)
     print('\t\t>>>  applying transforms and saving slices <<<')
-    counter = -1
-    # for i in tqdm(dl):
-    #     counter+=1
-    #     continue
     iterloader = iter(dl)
     for i in range(len(iterloader)):
         try:

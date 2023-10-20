@@ -11,7 +11,7 @@ def copyToNewNameFolder(i_file_name, root, output_dir, move_files):
     full_file_path = os.path.join(root, i_file_name)
     try:
         # Try, so that only dicom files get moved (pydicom will give an error otherwise)
-        dicom_data = pydicom.read_file(full_file_path)
+        dicom_data = pydicom.read_file(full_file_path, stop_before_pixels=True)
 
         patient_ID = dicom_data.PatientID
         study_date = dicom_data.StudyDate
@@ -77,7 +77,7 @@ def make_filepaths_safe_for_linux(root_dir):
 def createHashList(i_file, root):
     i_dicom_file = os.path.join(root, i_file)
     try:
-        temp_dicom = pydicom.read_file(i_dicom_file)
+        temp_dicom = pydicom.read_file(i_dicom_file, stop_before_pixels=True)
     except InvalidDicomError:
         return None
 
