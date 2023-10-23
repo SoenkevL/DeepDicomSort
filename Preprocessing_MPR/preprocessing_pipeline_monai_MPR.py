@@ -62,6 +62,10 @@ nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder, df_path
 print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size)
 
+print('creating DICOM frame')
+datapath = os.path.dirname(DICOM_FOLDER)
+createDicomHeaderCsv(datapath)
+
 elapsed_time = time.time() - start_time
 
 print(elapsed_time)

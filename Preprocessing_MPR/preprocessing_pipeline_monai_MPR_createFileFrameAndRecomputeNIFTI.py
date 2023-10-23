@@ -1,6 +1,6 @@
 import os
 import yaml
-import DICOM_preparation_functions_MPR as DPF
+import DICOM_preparation_functions_MPR_noMovingOrCopying as DPF
 import NIFTI_preparation_functions_MPR as NPF
 import preprocessingFunctionMonai_MPR as PFM
 import time
@@ -100,7 +100,7 @@ y_image_size = cfg['data_preparation']['image_size_y']
 z_image_size = cfg['data_preparation']['image_size_z']
 DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
 df_path = cfg['preprocessing']['df_path']
-print(f'preprocessing {DICOM_FOLDER}')
+print(f'preprocessing {DICOM_FOLDER} without moving or copying dicom files to create the linking dataframes')
 
 DEFAULT_SIZE = [x_image_size, y_image_size, z_image_size]
 
@@ -116,8 +116,10 @@ def is_odd(number):
 
 print(f'number of elements in dicom folder:{len(os.listdir(DICOM_FOLDER))}')
 print('Sorting DICOM to structured folders....')
-if not agrs.skip_sorting:
+if not args.skip_sorting:
     structured_dicom_folder = DPF.sort_DICOM_to_structured_folders(DICOM_FOLDER, df_path)
+else:
+    structured_dicom_folder = os.path.dirname(DICOM_FOLDER)+'/DICOM_STRUCTURED'
 
 # Turn the following step on if you have problems running the pipeline
 # It will replaces spaces in the path names, which can sometimes
@@ -133,6 +135,10 @@ nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder, df_path
 
 print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size)
+
+print('creating DICOM frame')
+datapath = os.path.dirname(DICOM_FOLDER)
+createDicomHeaderInfoCsv(datapath)
 
 elapsed_time = time.time() - start_time
 

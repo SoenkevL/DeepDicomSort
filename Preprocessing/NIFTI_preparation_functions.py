@@ -44,7 +44,6 @@ class CustomFolderLayout(FolderLayoutBase):
             patch_index=idx,
             makedirs=self.makedirs,
         )
-        print(f'full name: {full_name}')
         for k, v in kwargs.items():
             full_name += f"_{k}-{v}"
         if self.ext is not None:
@@ -127,23 +126,33 @@ def convert_DICOM_to_NIFTI_dicom2nifti(root_dir):
 
     return out_dir
 
-def convert_DICOM_to_NIFTI_monai(root_dir):
+def convert_DICOM_to_NIFTI_monai(root_dir, df_path):
     # Convert all dicom files in the directory to nifti
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
 
     create_directory(out_dir)
-
+    direcList = []
     for root, dirs, files in os.walk(root_dir):
         # if len(files) > 0 and 'MR' in root:
         if len(files) > 0:
-            image = LoadImage(image_only=False)(root)
-            Timage = EnsureChannelFirst()(image[0], image[1])
-            print(f'image shape: {Timage.shape}')
-            SaveImage(folder_layout=CustomFolderLayout(output_dir=out_dir,extension='.nii.gz',data_root_dir=root_dir, makedirs=True))(Timage, image[1])
-
+            try:
+                image = LoadImage(image_only=False)(root)
+                Timage = EnsureChannelFirst()(image[0], image[1])
+                SaveImage(folder_layout=CustomFolderLayout(output_dir=out_dir,extension='.nii.gz',data_root_dir=root_dir, makedirs=True),squeeze_end_dims=True)(Timage, image[1])
+                temp = CustomFolderLayout(output_dir=out_dir,extension='.nii.gz',data_root_dir=root_dir, makedirs=True)
+                newName = temp.filename(root)
+                direcList.append([root, newName])
+            except:
+                print(f'failed to convert dicomFolder: {root}')
+                direcList.append(['root',None])
+                continue
+    temp = pd.DataFrame(direcList, columns=['structuredDicomPath', 'NIFTI_path'])
+    df = pd.read_csv(df_path)
+    df = df.merge(temp, how='left', on='structuredDicomPath')
+    df.to_csv(df_path, index=False)
     return out_dir
-
+    
 
 def move_RGB_images(root_dir, fslval_bin):
     base_dir = os.path.dirname(os.path.normpath(root_dir))

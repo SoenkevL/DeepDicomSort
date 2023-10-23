@@ -5,7 +5,7 @@ import numpy as np
 from glob import glob
 import shutil
 import subprocess
-
+import dicom2nifti
 import pandas as pd
 from tqdm import tqdm
 from monai.data import FolderLayoutBase
@@ -98,6 +98,35 @@ def convert_DICOM_to_NIFTI_dcm2niix(root_dir):
 
     return out_dir
 
+def convert_DICOM_to_NIFTI_dicom2nifti(root_dir):
+    # Convert all dicom files in the directory to nifti
+    base_dir = os.path.dirname(os.path.normpath(root_dir))
+    out_dir = os.path.join(base_dir, 'NIFTI')
+    temp_dir = os.path.join(base_dir, 'TEMP')
+
+    create_directory(out_dir)
+    delete_directory(temp_dir)
+
+    for root, dirs, files in os.walk(root_dir):
+        # if len(files) > 0 and 'MR' in root:
+        if len(files) > 0:
+            print(f'{len(files)} at {root}')
+            patient_ID = root.split(root_dir)[1]
+            patient_ID = patient_ID.split(os.sep)[1]
+
+            patient_out_folder = os.path.join(out_dir, patient_ID)
+
+            sub_directory_names = root.split(os.path.join(root_dir, patient_ID))[1]
+            sub_directory_names = sub_directory_names.split(os.sep)[1:]
+
+            nifti_file_name = '__'.join(sub_directory_names)
+            patient_out_folder = os.path.join(patient_out_folder, nifti_file_name)
+            create_directory(patient_out_folder)
+            print(f'nifti filename: {nifti_file_name}')
+            dicom2nifti.convert_directory(root, patient_out_folder)
+
+    return out_dir
+
 def convert_DICOM_to_NIFTI_monai(root_dir, df_path):
     # Convert all dicom files in the directory to nifti
     base_dir = os.path.dirname(os.path.normpath(root_dir))
@@ -124,6 +153,7 @@ def convert_DICOM_to_NIFTI_monai(root_dir, df_path):
     df = df.merge(temp, how='left', on='structuredDicomPath')
     df.to_csv(df_path, index=False)
     return out_dir
+
 
 def move_RGB_images(root_dir, fslval_bin):
     base_dir = os.path.dirname(os.path.normpath(root_dir))
