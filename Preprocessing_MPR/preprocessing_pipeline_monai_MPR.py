@@ -17,6 +17,7 @@ def protectConfig(configFile):
 
 parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder depening on what is specified in the config.yaml file.')
 parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+parser.add_argument('-s', '--skip_sorting', action='store_true', help='set this flag to skip the sorting and splitting in series step of the preprocessing pipeline')
 args = parser.parse_args()
 start_time = time.time()
 config = protectConfig(args.configFile)
@@ -60,6 +61,10 @@ nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder, df_path
 
 print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size)
+
+print('creating DICOM frame')
+datapath = os.path.dirname(DICOM_FOLDER)
+createDicomHeaderCsv(datapath)
 
 elapsed_time = time.time() - start_time
 

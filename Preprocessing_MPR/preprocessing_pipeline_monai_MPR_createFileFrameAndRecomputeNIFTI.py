@@ -1,13 +1,8 @@
-'''
-a script that takes care of the preprocessing of raw dicom folder to structure them, convert them into nifit files
-extract 4d information, resample them to the specified sizes in the config respectively, scale their volume intensities
-and finally split each nifti volume into 25 2d slices
-'''
 import os
 import yaml
-import DICOM_preparation_functions as DPF
-import NIFTI_preparation_functions as NPF
-import preprocessingFunctionMonai as PFM
+import DICOM_preparation_functions_MPR_noMovingOrCopying as DPF
+import NIFTI_preparation_functions_MPR as NPF
+import preprocessingFunctionMonai_MPR as PFM
 import time
 import argparse
 import shutil
@@ -100,13 +95,12 @@ config = protectConfig(args.configFile)
 with open(config, 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-
 x_image_size = cfg['data_preparation']['image_size_x']
 y_image_size = cfg['data_preparation']['image_size_y']
 z_image_size = cfg['data_preparation']['image_size_z']
 DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
 df_path = cfg['preprocessing']['df_path']
-print(f'preprocessing {DICOM_FOLDER}')
+print(f'preprocessing {DICOM_FOLDER} without moving or copying dicom files to create the linking dataframes')
 
 DEFAULT_SIZE = [x_image_size, y_image_size, z_image_size]
 
@@ -118,7 +112,6 @@ def create_directory(dir):
 
 def is_odd(number):
     return number % 2 != 0
-
 
 
 print(f'number of elements in dicom folder:{len(os.listdir(DICOM_FOLDER))}')
@@ -135,13 +128,16 @@ else:
 # DPF.make_filepaths_safe_for_linux(structured_dicom_folder)
 #
 print('Checking and splitting for double scans in folders....')
-DPF.split_in_series(structured_dicom_folder,moveFiles=False)
+DPF.split_in_series(structured_dicom_folder, df_path)
 
 print('Converting DICOMs to NIFTI....')
-nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder)
+nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder, df_path)
 
 print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size)
+
+print('creating DICOM frame')
+datapath = os.path.dirname(DICOM_FOLDER)
 createDicomHeaderInfoCsv(datapath)
 
 elapsed_time = time.time() - start_time

@@ -10,6 +10,7 @@ import Pytorch_monai.Model_and_transforms as MF
 import Pytorch_monai.Utils as Utils
 import json
 import argparse
+import Model_analysis as MA
 
 
 def createMetaInfoDict(modelFile, test_label_file, train_label_file, labelmap):
@@ -87,7 +88,9 @@ def main(configFile):
     model_file = cfg['model']['model_file']
     label_map_file = cfg['model']['label_map_file']
 
-
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder, exist_ok=True)
+        
     with open(label_map_file) as Lmap:
         label_map = json.load(Lmap)
 
@@ -117,5 +120,6 @@ if __name__=='__main__':
     parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
     args = parser.parse_args()
     configFile = args.configFile
-    main(configFile)
+    outfile = main(configFile)
     print('finished testing')
+    MA.main(outfile, testing=True, certainties = '[1, 0.8, 0.6]')
