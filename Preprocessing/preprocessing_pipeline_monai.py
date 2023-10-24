@@ -11,6 +11,8 @@ import preprocessingFunctionMonai as PFM
 import time
 import argparse
 import shutil
+import pandas as pd
+import pydicom as pdicom
 
 def protectConfig(configFile):
     filename = os.path.basename(configFile)
@@ -135,13 +137,14 @@ else:
 # DPF.make_filepaths_safe_for_linux(structured_dicom_folder)
 #
 print('Checking and splitting for double scans in folders....')
-DPF.split_in_series(structured_dicom_folder,moveFiles=False)
+DPF.split_in_series(structured_dicom_folder,df_path,moveFiles=False)
 
 print('Converting DICOMs to NIFTI....')
-nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder)
+nifti_folder = NPF.convert_DICOM_to_NIFTI_monai(structured_dicom_folder, df_path)
 
 print('applying monai transforms and splitting images')
 nifti_slices_folder = PFM.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size)
+datapath = os.path.dirname(df_path)
 createDicomHeaderInfoCsv(datapath)
 
 elapsed_time = time.time() - start_time

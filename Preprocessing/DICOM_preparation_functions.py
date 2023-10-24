@@ -7,7 +7,7 @@ from tqdm import tqdm
 import pandas as pd
 
 
-def sort_DICOM_to_structured_folders(root_dir, move_files=False):
+def sort_DICOM_to_structured_folders(root_dir, df_path, move_files=False):
     # Given a folder (with possible nested subfolders) of DICOMS, this function will sort all dicoms
     # Into a subject folders, based on modality, date and sequence
     base_dir = os.path.dirname(os.path.normpath(root_dir))
@@ -20,6 +20,8 @@ def sort_DICOM_to_structured_folders(root_dir, move_files=False):
     for root, dirs, files in tqdm(os.walk(root_dir)):
         # Check if there actually are any files in current folder
         if len(files) > 0:
+            outputFolders = []
+            dicom_output_folder = None
             for i_file_name in files:
                 try:
                     # Try, so that only dicom files get moved (pydicom will give an error otherwise)
@@ -39,13 +41,15 @@ def sort_DICOM_to_structured_folders(root_dir, move_files=False):
 
                     if not os.path.exists(dicom_output_folder):
                         os.makedirs(dicom_output_folder)
-                    dataPathList.append([full_file_path, dicom_output_folder])
                     if move_files:
                         shutil.move(full_file_path, dicom_output_folder)
                     else:
                         shutil.copy(full_file_path, dicom_output_folder)
+                    outputFolders.append(dicom_output_folder)
                 except InvalidDicomError:
                     pass
+            for struct_folder in set(outputFolders):
+                dataPathList.append([root, struct_folder])
     df = pd.DataFrame(dataPathList, columns=['originPath','structuredDicomPath'])
     df.to_csv(df_path, index=False)
     return output_dir
@@ -62,7 +66,7 @@ def make_filepaths_safe_for_linux(root_dir):
             os.rename(os.path.join(root, i_file), os.path.join(root, i_file.replace(' ', '_')))
 
 
-def split_in_series(root_dir, moveFiles=True):
+def split_in_series(root_dir, df_path, moveFiles=True):
     # If multiple DICOM series are in the same folder
     # This function will split them up
     splitedSeries = []
@@ -144,5 +148,5 @@ def split_in_series(root_dir, moveFiles=True):
                 DropIndex = df[df['structuredDicomPath']==root].index
                 df.drop(index=DropIndex, inplace=True)
             df = pd.concat((df,pd.DataFrame({'originPath':datapath, 'structuredDicomPath':newScanDir})), axis=0)
-    df.reset_index()
-    df.to_csv(df_path, index=False)
+            df.reset_index()
+        df.to_csv(df_path, index=False)

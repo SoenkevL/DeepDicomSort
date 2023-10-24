@@ -1,5 +1,4 @@
 import NIFTI_preparation_functions as nifp
-import yaml
 from monai.transforms import  SaveImage
 from tqdm import tqdm
 import monai
