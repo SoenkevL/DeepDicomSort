@@ -113,3 +113,5 @@ config_BRATS.yaml
 .testing_old
 Pytorch_monai/secrets.py
 wandb
+*.csv
+*.txt
