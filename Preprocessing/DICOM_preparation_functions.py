@@ -4,6 +4,7 @@ import shutil
 from pydicom.errors import InvalidDicomError
 import numpy as np
 from tqdm import tqdm
+import pandas as pd
 
 
 def sort_DICOM_to_structured_folders(root_dir, move_files=False):
