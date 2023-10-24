@@ -89,7 +89,7 @@ def main(configFile):
     label_map_file = cfg['model']['label_map_file']
 
     if not os.path.exists(output_folder):
-        os.mkdir(output_folder)
+        os.makedirs(output_folder, exist_ok=True)
         
     with open(label_map_file) as Lmap:
         label_map = json.load(Lmap)

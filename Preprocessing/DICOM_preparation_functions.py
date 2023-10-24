@@ -3,6 +3,7 @@ import os
 import shutil
 from pydicom.errors import InvalidDicomError
 import numpy as np
+from tqdm import tqdm
 
 
 def sort_DICOM_to_structured_folders(root_dir, move_files=False):
@@ -15,7 +16,7 @@ def sort_DICOM_to_structured_folders(root_dir, move_files=False):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    for root, dirs, files in os.walk(root_dir):
+    for root, dirs, files in tqdm(os.walk(root_dir)):
         # Check if there actually are any files in current folder
         if len(files) > 0:
             for i_file_name in files:
@@ -60,10 +61,11 @@ def make_filepaths_safe_for_linux(root_dir):
             os.rename(os.path.join(root, i_file), os.path.join(root, i_file.replace(' ', '_')))
 
 
-def split_in_series(root_dir):
+def split_in_series(root_dir, moveFiles=True):
     # If multiple DICOM series are in the same folder
     # This function will split them up
-    for root, dirs, files in os.walk(root_dir):
+    splitedSeries = []
+    for root, dirs, files in tqdm(os.walk(root_dir)):
         if len(files) > 0:
             hash_list = list()
             for i_file in files:
@@ -125,20 +127,21 @@ def split_in_series(root_dir):
 
                 _, reverse_indices = np.unique(hash_list, return_inverse=True)
 
-                for i_dicom, index_type in zip(files, reverse_indices):
-                    new_scan_dir = os.path.join(upper_folder, scan_name + '_Scan_' + str(i_sets[index_type]))
-                    shutil.move(os.path.join(root, i_dicom), new_scan_dir)
-                os.rmdir(root)
+                if moveFiles:
+                    for i_dicom, index_type in zip(files, reverse_indices):
+                        new_scan_dir = os.path.join(upper_folder, scan_name + '_Scan_' + str(i_sets[index_type]))
+                        shutil.move(os.path.join(root, i_dicom), new_scan_dir)
+                    os.rmdir(root)
     if splitedSeries:
-    df = pd.read_csv(df_path)
-    df = df[['originPath', 'structuredDicomPath']]
-    priorRoot = None
-    for root, newScanDir in splitedSeries:
-        if root != priorRoot:
-            priorRoot = root
-            datapath = df['originPath'][df['structuredDicomPath']==root]
-            DropIndex = df[df['structuredDicomPath']==root].index
-            df.drop(index=DropIndex, inplace=True)
-        df = pd.concat((df,pd.DataFrame({'originPath':datapath, 'structuredDicomPath':newScanDir})), axis=0)
+        df = pd.read_csv(df_path)
+        df = df[['originPath', 'structuredDicomPath']]
+        priorRoot = None
+        for root, newScanDir in splitedSeries:
+            if root != priorRoot:
+                priorRoot = root
+                datapath = df['originPath'][df['structuredDicomPath']==root]
+                DropIndex = df[df['structuredDicomPath']==root].index
+                df.drop(index=DropIndex, inplace=True)
+            df = pd.concat((df,pd.DataFrame({'originPath':datapath, 'structuredDicomPath':newScanDir})), axis=0)
     df.reset_index()
     df.to_csv(df_path, index=False)

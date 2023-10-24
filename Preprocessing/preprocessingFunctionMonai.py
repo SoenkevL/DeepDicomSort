@@ -1,4 +1,4 @@
-import Preprocessing.NIFTI_preparation_functions as nifp
+import NIFTI_preparation_functions as nifp
 import yaml
 from monai.transforms import  SaveImage
 from tqdm import tqdm
@@ -80,7 +80,7 @@ def preprocessImagesMonai(niftiDirec, x, y, z):
     )
 
     ds = monai.data.Dataset(dataset, dataTransform)
-    dl = monai.data.DataLoader(ds, batch_size=1, num_workers=0)
+    dl = monai.data.DataLoader(ds, batch_size=8, num_workers=8)
     print('>>> create data set')
     counter = -1
     for i in tqdm(dl):

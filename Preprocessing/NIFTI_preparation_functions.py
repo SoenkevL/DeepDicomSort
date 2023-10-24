@@ -5,7 +5,7 @@ from glob import glob
 import shutil
 import subprocess
 from tqdm import tqdm
-import dicom2nifti
+# import dicom2nifti
 from monai.data import FolderLayoutBase
 from monai.config import PathLike
 from monai.data.utils import create_file_basename
@@ -133,7 +133,7 @@ def convert_DICOM_to_NIFTI_monai(root_dir, df_path):
 
     create_directory(out_dir)
     direcList = []
-    for root, dirs, files in os.walk(root_dir):
+    for root, dirs, files in tqdm(os.walk(root_dir)):
         # if len(files) > 0 and 'MR' in root:
         if len(files) > 0:
             try:
