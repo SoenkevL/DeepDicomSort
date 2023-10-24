@@ -107,9 +107,9 @@ venv.bak/
 #user
 config_BRATS.yaml
 .idea
-.training
+.training_old
 .csv
 *.yaml
-.testing
+.testing_old
 Pytorch_monai/secrets.py
 wandb
