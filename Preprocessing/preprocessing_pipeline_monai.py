@@ -1,3 +1,8 @@
+'''
+a script that takes care of the preprocessing of raw dicom folder to structure them, convert them into nifit files
+extract 4d information, resample them to the specified sizes in the config respectively, scale their volume intensities
+and finally split each nifti volume into 25 2d slices
+'''
 import os
 import yaml
 import DICOM_preparation_functions as DPF

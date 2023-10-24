@@ -6,8 +6,13 @@ import numpy as np
 
 
 def sort_DICOM_to_structured_folders(root_dir, move_files=False):
-    # Given a folder (with possible nested subfolders) of DICOMS, this function will sort all dicoms
-    # Into a subject folders, based on modality, date and sequence
+    '''
+    Will create a folder structure based on the subjectUID, modality,
+    date of accquisition and sequence UID using the dicom headers of the dicom files contained in root dir.
+    Any file that is not a dicom will not be moved. The original folder will not be altered and dicom files are copied.
+    rooot_dir: folder which contains dicom files
+    move_files: default False. If set to true files will not be copied but moved out of root_dir
+    '''
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     output_dir = os.path.join(base_dir, 'DICOM_STRUCTURED')
 
@@ -59,8 +64,11 @@ def make_filepaths_safe_for_linux(root_dir):
 
 
 def split_in_series(root_dir):
-    # If multiple DICOM series are in the same folder
-    # This function will split them up
+    '''
+    Checks if there are multiple files in the same folder which belong to different dicom series and splits
+    them into different folders
+    root_dir: filepath to the STRUCTURED_DICOM directory
+    '''
     for root, dirs, files in os.walk(root_dir):
         if len(files) > 0:
             hash_list = list()

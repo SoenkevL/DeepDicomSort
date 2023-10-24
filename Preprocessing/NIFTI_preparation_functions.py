@@ -14,7 +14,10 @@ from monai.transforms import LoadImage, SaveImage, EnsureChannelFirst
 
 
 class CustomFolderLayout(FolderLayoutBase):
-
+    '''
+    this provides a custom folder Layout which can deal with the dicom images in STRUCTURED_DICOM
+    inherited from monais FolderLayoutBase
+    '''
     def __init__(
             self,
             output_dir: PathLike,
@@ -63,7 +66,12 @@ def delete_directory(dir):
 
 
 def convert_DICOM_to_NIFTI_dcm2niix(root_dir):
-    # Convert all dicom files in the directory to nifti
+    '''
+    Try to convert all dicom files in the root dir to nifti images keeping the given folder structure
+    This function uses the python library dcm2niix for that operation
+    Does not provide integration with the File dataframe yet
+    Some dicom images can not be converted like JPEG2000 compressed ones or single slices.
+    '''
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
     temp_dir = os.path.join(base_dir, 'TEMP')
@@ -72,7 +80,7 @@ def convert_DICOM_to_NIFTI_dcm2niix(root_dir):
     delete_directory(temp_dir)
 
     for root, dirs, files in os.walk(root_dir):
-        # if len(files) > 0 and 'MR' in root:
+        # check there are files in root:
         if len(files) > 0:
             create_directory(temp_dir)
             patient_ID = root.split(root_dir)[1]
@@ -99,7 +107,12 @@ def convert_DICOM_to_NIFTI_dcm2niix(root_dir):
     return out_dir
 
 def convert_DICOM_to_NIFTI_dicom2nifti(root_dir):
-    # Convert all dicom files in the directory to nifti
+    '''
+    Try to convert all dicom files in the root dir to nifti images keeping the given folder structure
+    This function uses the python library dcicom2nifti for that operation
+    Does not provide integration with the File dataframe yet
+    Some dicom images may not be convertable and throw an error
+    '''
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
     temp_dir = os.path.join(base_dir, 'TEMP')
@@ -128,7 +141,12 @@ def convert_DICOM_to_NIFTI_dicom2nifti(root_dir):
     return out_dir
 
 def convert_DICOM_to_NIFTI_monai(root_dir):
-    # Convert all dicom files in the directory to nifti
+    '''
+    Try to convert all dicom files in the root dir to nifti images keeping the given folder structure
+    This function uses the python library dcm2niix for that operation
+    Does only log the sucessfully converted files into the FileFrame.
+    Some dicom images can not be converted but error handling is in place to catch these exceptions
+    '''
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
 
@@ -286,6 +304,14 @@ def rescale_image_intensity(root_dir):
 
 
 def create_label_file(nifti_dir,base_dir, images_4D_file, name='labels.txt'):
+    '''
+    creates a label file from the final NIFTI_SLICES folder using information from the 4d info
+    and saves it into a txt.
+    nifti_dir: NIFTI_SLICES directory
+    base_dir: underlying directory if nifti_dir (should be removed)
+    images_4d_file: file which contain the 4d info of the images for the extra column
+    name; default: labels.txt; the name of the label file (must contain .txt as the file extension)
+    '''
     base_dir = base_dir
     data_dir = os.path.join(base_dir, 'DATA')
     label_file = os.path.join(data_dir, name)
