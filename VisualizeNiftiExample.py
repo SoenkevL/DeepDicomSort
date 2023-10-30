@@ -24,4 +24,4 @@ for idx in FullResultFrame.index:
     plt.title(f"{FullResultFrame['NIFTI_name'][idx]}\n was voted {FullResultFrame['vote'][idx]} and is actually {FullResultFrame['groundTruth'][idx]}")
     plt.savefig(os.path.join(imagePath,f'p{idx}.png'))
     plt.close('all')
-#%%
+

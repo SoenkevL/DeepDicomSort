@@ -50,7 +50,7 @@ def createDataFrame(server, user, password, project, outputFolder='', save_Indiv
             ScansFrameAll.to_csv(os.path.join(outputFolder,'ScansFrame.csv'))
         FullFrame = FullFrame.merge(ExperimentFrameAll, how='left', left_on='ID', right_on='subjectId', suffixes=('_sub','_exp'))
         FullFrame = FullFrame.merge(ScansFrameAll, how='left', left_on='ID_exp', right_on='experimentId', suffixes=('','_scan'))
-        FullFrame.to_csv(os.path.join(outputFolder, 'FullFrame.csv'))
+        FullFrame.to_csv(os.path.join(outputFolder, 'RSS/FullFrame_RSS.csv'))
         return FullFrame
 
 def cleanupFrame(dataframe, dropna=True, dropna_thresh=0.9, onlyScans=True):
