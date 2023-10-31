@@ -186,18 +186,21 @@ def extract_4D_images(root_dir):
                 if '.nii.gz' in i_file:
                     image_file = os.path.join(root, i_file)
 
-                    image = sitk.ReadImage(image_file, sitk.sitkFloat32)
-                    if image.GetDimension() == 4:
-                        file_name = i_file.split('.nii.gz')[0]
-                        image_size = list(image.GetSize())
-                        image_size[3] = 0
-                        image = sitk.Extract(image,
-                                             size=image_size,
-                                             index=[0, 0, 0, 0])
+                    try:
+                        image = sitk.ReadImage(image_file, sitk.sitkFloat32)
+                        if image.GetDimension() == 4:
+                            file_name = i_file.split('.nii.gz')[0]
+                            image_size = list(image.GetSize())
+                            image_size[3] = 0
+                            image = sitk.Extract(image,
+                                                size=image_size,
+                                                index=[0, 0, 0, 0])
 
-                        sitk.WriteImage(image, image_file)
+                            sitk.WriteImage(image, image_file)
 
-                        the_file.write(file_name + '\n')
+                            the_file.write(file_name + '\n')
+                    except:
+                        continue
     return out_4D_file
 
 
