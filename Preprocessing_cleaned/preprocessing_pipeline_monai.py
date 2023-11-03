@@ -32,9 +32,9 @@ def full_preprocessing(config):
     df_path = cfg['preprocessing']['df_path']
     print(f'preprocessing {DICOM_FOLDER}')
 
-    try:
-        df = pd.read_csv(df_path, nrows=1) #will throw an error if path is not openable
-    except:
+    if os.path.splitext(df_path)[1]:
+        pass
+    else:
         df_path = os.path.join(df_path,'FileFrame.csv')
 
     print(f'number of elements in dicom folder:{len(os.listdir(DICOM_FOLDER))}')
@@ -68,9 +68,9 @@ def dicom_sorting(config):
     df_path = cfg['preprocessing']['df_path']
     print(f'preprocessing {DICOM_FOLDER}')
 
-    try:
-        df = pd.read_csv(df_path, nrows=1) #will throw an error if path is not openable
-    except:
+    if os.path.splitext(df_path)[1]:
+        pass
+    else:
         df_path = os.path.join(df_path,'FileFrame.csv')
 
     print(f'number of elements in dicom folder:{len(os.listdir(DICOM_FOLDER))}')
@@ -93,10 +93,9 @@ def dicom_to_nifti_from_structured(config):
     DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
     df_path = cfg['preprocessing']['df_path']
 
-    try:
-        df = pd.read_csv(df_path, nrows=1) #will throw an error if path is not openable
-    except:
-        print('there is no dataframe with structured info yet, a new one will be created but without original filenames')
+    if os.path.splitext(df_path)[1]:
+        pass
+    else:
         df_path = os.path.join(df_path,'FileFrame.csv')
 
     structured_dicom_folder = os.path.join(os.path.dirname(DICOM_FOLDER),'DICOM_STRUCTURED')
@@ -122,9 +121,10 @@ def nifti_processing(config):
     z_image_size = cfg['data_preparation']['image_size_z']
     DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
     df_path = cfg['preprocessing']['df_path']
-    try:
-        df = pd.read_csv(df_path, nrows=1) #will throw an error if path is not openable
-    except:
+
+    if os.path.splitext(df_path)[1]:
+        pass
+    else:
         df_path = os.path.join(df_path,'FileFrame.csv')
 
     nifti_folder = os.path.join(os.path.dirname(DICOM_FOLDER),'NIFTI')

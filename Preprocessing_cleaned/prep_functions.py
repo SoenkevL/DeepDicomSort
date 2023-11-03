@@ -304,9 +304,8 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
         for i_file in files:
             if '.nii.gz' in i_file:
                 filepaths.append(os.path.join(root,i_file))
-                filenames.append(i_file.split('.nii.gz')[0])
     print(len(filepaths))
-    dataset = [{'image':filepath,'label':filename} for filepath, filename in zip(filepaths,filenames)]
+    dataset = [{'image':filepath,'label':filepath} for filepath in filepaths]
 
 
     class SaveIndividualSlices(monai.transforms.MapTransform):
@@ -322,6 +321,7 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
             converted_Files = []
             os.makedirs(self.targetDir,exist_ok=True)
             depth = data[self.keys[0]].shape[-1]
+            converted = True
             for i in range(depth):
                 saver = SaveImage(
                     output_dir=self.outdir,
@@ -340,11 +340,13 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
                 metadata = dict(data[f'{self.keys[0]}_meta_dict'])
                 try:
                     saver(img=slice,meta_data=metadata)
-                    converted_Files.append(data[self.keys[1]])
                 except RuntimeError:
                     print(f'runtime error when trying to save image {data[self.keys[1]]} to slice{i}')
+                    converted = False
                     break
-            return data, converted_Files
+            if converted:
+                converted_Files.append(data[self.keys[1]])
+            return data, data[self.keys[1]]
 
     dataTransform = monai.transforms.Compose(
         [
@@ -359,28 +361,27 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
     )
 
     ds = monai.data.Dataset(dataset, dataTransform)
-    dl = monai.data.DataLoader(ds, batch_size=8, num_workers=8)
+    dl = monai.data.DataLoader(ds, batch_size=1, num_workers=8)
     dl_iter = iter(dl)
     print('>>> create data set')
     All_converted_files = []
-    for _ in tqdm(range(len(ds)+5)):
+    for _ in tqdm(range(len(ds))):
         try:
-            _, converted_Files = next(iter_dl)
+            _, converted_Files = next(dl_iter)
             [All_converted_files.append(file) for file in converted_Files]
         except StopIteration:
             break
         finally:
             continue
-
+    print(converted_Files)
     df = pd.read_csv(df_path)
     if df.empty:
         df_path = os.path.join(os.path.dirname(df_path),'ConversionFrame.csv')
         df['NIFTI_path'] = pd.Series(All_converted_files)
-        df['Sliced'] = True
+        df['sliced'] = True
     else:
-        df['Sliced'] = False
         for niftipath in All_converted_files:
-            df[df['NIFTI_path']==niftipath]['Sliced'] = True
+            df.loc[df['NIFTI_path']==niftipath,'sliced'] = True
     df.to_csv(df_path, index=False)
 
     create_label_file(nifti_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
