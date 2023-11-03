@@ -85,7 +85,8 @@ def prepareData(train_label_file, batch_size,N_train_classes, crv, crt, augment=
                     rotate_range=0.2,
                     shear_range=((-0.2, 0.2), (-0.2, 0.2)),
                     translate_range=((-20, 20), (-20, 20)),
-                    device=device
+                    device=device,
+                    cache_grid=True
                 ),
                 monai.transforms.RandZoomd(keys=['image'],prob=0.25, min_zoom=0.8, max_zoom=1.2)
             ]
