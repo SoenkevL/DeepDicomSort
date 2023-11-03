@@ -18,7 +18,7 @@ train_test_split = cfg['data_preparation']['train_test_split']
 
 
 print('applying monai transforms and splitting images')
-nifti_slices_folder = PFM.preprocessImagesMonai(args.nifti_folder,x_image_size,y_image_size,z_image_size,train_test_split=train_test_split)
+nifti_slices_folder = PFM.preprocessImagesMonai(args.nifti_folder,x_image_size,y_image_size,z_image_size)
 
 elapsed_time = time.time() - start_time
 
