@@ -319,7 +319,7 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
                 self.outdir = self.targetDir
 
         def __call__(self, data):
-            failedFiles = []
+            converted_Files = []
             os.makedirs(self.targetDir,exist_ok=True)
             depth = data[self.keys[0]].shape[-1]
             for i in range(depth):
@@ -340,11 +340,11 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
                 metadata = dict(data[f'{self.keys[0]}_meta_dict'])
                 try:
                     saver(img=slice,meta_data=metadata)
+                    converted_Files.append(data[self.keys[1]])
                 except RuntimeError:
                     print(f'runtime error when trying to save image {data[self.keys[1]]} to slice{i}')
-                    failedFiles.append(data[self.keys[1]])
                     break
-            return data, failedFiles
+            return data, converted_Files
 
     dataTransform = monai.transforms.Compose(
         [
@@ -360,20 +360,27 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
 
     ds = monai.data.Dataset(dataset, dataTransform)
     dl = monai.data.DataLoader(ds, batch_size=8, num_workers=8)
+    dl_iter = iter(dl)
     print('>>> create data set')
-    AllFailedFiles = []
-    for _, failedFiles in tqdm(dl):
-        [AllFailedFiles.append(file) for file in failedFiles]
+    All_converted_files = []
+    for _ in tqdm(range(len(ds)+5)):
+        try:
+            _, converted_Files = next(iter_dl)
+            [All_converted_files.append(file) for file in converted_Files]
+        except StopIteration:
+            break
+        finally:
+            continue
 
     df = pd.read_csv(df_path)
     if df.empty:
         df_path = os.path.join(os.path.dirname(df_path),'ConversionFrame.csv')
-        df['NIFTI_path'] = pd.Series(AllFailedFiles)
-        df['failedSlicing'] = True
+        df['NIFTI_path'] = pd.Series(All_converted_files)
+        df['Sliced'] = True
     else:
-        df['failedSlicing'] = False
-        for niftipath in AllFailedFiles:
-            df[df['NIFTI_path']==niftipath]['failedSlicing'] = True
+        df['Sliced'] = False
+        for niftipath in All_converted_files:
+            df[df['NIFTI_path']==niftipath]['Sliced'] = True
     df.to_csv(df_path, index=False)
 
     create_label_file(nifti_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
