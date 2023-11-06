@@ -180,9 +180,9 @@ def prepareData(
     print(np.unique(valLabelList,return_counts=True))
 
     #create datasets and loaders
-    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=crt, cache_num=10000,
+    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=crt, cache_num=60000,
                                        num_workers=6,progress=True)
-    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=crv,cache_num=10000,
+    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=crv,cache_num=60000,
                                      num_workers=6,progress=True)
     if randomWeightedSampling:
         classCounts = [dictItem['label'] for dictItem in train_data_dict]
@@ -320,8 +320,8 @@ def main(configFile='config.yaml'):
         project='pytorch_DDS',
         name='training_'+model_name,
         config={
-            'train_label_file':train_label_file,
-            'label_map':label_map,
+            'train_label_file': train_label_file,
+            'label_map': label_map,
             'loss function': str(loss_function),
             'optimizer': str(optimizer),
             'train_transform': Utils.from_compose_to_list(trainTransforms),
@@ -329,10 +329,10 @@ def main(configFile='config.yaml'):
             'train_batch_size': train_loader.batch_size,
             'val_batch_size': val_loader.batch_size,
             'augmentation': augment,
-            'random_weighted_sampling':randomWeightedSampling,
-            'transfer_weights':transfer_weights,
-            'freeze_conv':freezeConv,
-            'per_slice_normalization':per_slice_normalization
+            'random_weighted_sampling': randomWeightedSampling,
+            'transfer_weights': transfer_weights,
+            'freeze_conv': freezeConv,
+            'per_slice_normalization': per_slice_normalization
         }
     )
     run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
