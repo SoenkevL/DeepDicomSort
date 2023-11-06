@@ -21,6 +21,12 @@ def is_odd(number):
 
 
 def full_preprocessing(config):
+    '''
+    runs the full preprocessing pipeline using the provided config
+    dicom sorting - dicom to nifti conversion - nifti volume to slices
+    Logs the whole process in the csv provided in the config
+    requires all preprocessing fields to be set inside the config
+    '''
     start_time = time.time()
     with open(config, 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
@@ -60,6 +66,9 @@ def full_preprocessing(config):
     return nifti_slices_folder
 
 def dicom_sorting(config):
+    '''
+    does only the dicom sorting without any nifti processing steps
+    '''
     start_time = time.time()
     with open(config, 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
@@ -85,6 +94,9 @@ def dicom_sorting(config):
     print(f'dicom sorting took {elapsed_time}s')
 
 def dicom_to_nifti_from_structured(config):
+    '''
+    does only the nifti conversion from "STRUCTURED_DICOM" folder
+    '''
     print('Converting DICOMs to NIFTI....')
     start_time = time.time()
     with open(config, 'r') as ymlfile:
@@ -111,7 +123,9 @@ def dicom_to_nifti_from_structured(config):
         return nifti_folder
 
 def nifti_processing(config):
-
+    '''
+    does only the nifti processing from the "NIFTI" folder
+    '''
     with open(config, 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
 
@@ -143,7 +157,7 @@ if __name__ == '__main__':
                             \n "full" to run the whole preprocessing pipeline \
                             \n "sorting" to run only the dicom sorting \
                             \n "conversion" to run only dicom to nifti conversion \
-                            \n "slicing" to run only the nifti slicing part')
+                            \n "processing" to run only the nifti processing and slicing part')
     args = parser.parse_args()
     config = args.configFile
     mode = args.mode
@@ -153,7 +167,7 @@ if __name__ == '__main__':
         dicom_sorting(config)
     elif mode == "conversion":
         dicom_to_nifti_from_structured(config)
-    elif mode == "slicing":
+    elif mode == "processing":
         nifti_processing(config)
     else:
         print('invalid mode, see help for flag -m')

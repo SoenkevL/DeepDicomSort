@@ -17,6 +17,9 @@ import random
 import matplotlib.pyplot as plt
 
 def saveNiftiToImage(imagedata, save_path, title):
+    '''
+    saves the array in imagedata into the save_path with title as title
+    '''
     plt.figure()
     imagedata = np.squeeze(imagedata)
     plt.imshow(imagedata,cmap='gray')
@@ -26,6 +29,9 @@ def saveNiftiToImage(imagedata, save_path, title):
 
 
 def freezeConvLayers(model, verbose=False):
+    '''
+    freezes all layers which contain 'conv' in their name
+    '''
     for name, para in model.named_parameters():
         if 'conv' in name:
             if verbose:
@@ -36,6 +42,9 @@ def freezeConvLayers(model, verbose=False):
     return model
 
 def ensureUnfrozenLayers(model, verbose=False):
+    '''
+    makes sure all layers of the model are unfroozen
+    '''
     for name, para in model.named_parameters():
         if para.requires_grad:
             continue
@@ -46,6 +55,14 @@ def ensureUnfrozenLayers(model, verbose=False):
     return model
 
 def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None, freeze_conv=False):
+    '''
+    Loads the model with transfer weights if they are given and puts it into the specified device
+    Also initializes and returns the optimier, loss function and lr_scheduler
+    N_train_classes: How many output classes should the model have
+    device: device to run the training on
+    initWeights: state dict or model in pytorch standard to load weights for transfer learning
+    freeez_conv: if the concolution layers of the transfer weights should be frozen
+    '''
     if initWeights:
         model = Utils.updateModelDictForTransferLearning(
             initWeights, MF.Net(n_outputclasses=N_train_classes)

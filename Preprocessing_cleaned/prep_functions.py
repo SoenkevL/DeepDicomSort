@@ -37,7 +37,7 @@ def sort_DICOM_to_structured_folders(root_dir, df_path, move_files=False):
                 try:
                     # Try, so that only dicom files get moved (pydicom will give an error otherwise)
                     full_file_path = os.path.join(root, i_file_name)
-                    dicom_data = pydicom.read_file(full_file_path)
+                    dicom_data = pydicom.read_file(full_file_path, stop_before_pixels=True)
 
                     patient_ID = dicom_data.PatientID
                     study_date = dicom_data.StudyDate
@@ -78,7 +78,7 @@ def split_in_series(root_dir, df_path):
             for i_file in files:
                 i_dicom_file = os.path.join(root, i_file)
                 try:
-                    temp_dicom = pydicom.read_file(i_dicom_file)
+                    temp_dicom = pydicom.read_file(i_dicom_file, stop_before_pixels=True)
                 except InvalidDicomError:
                     continue
 
@@ -201,7 +201,11 @@ def delete_directory(dir):
         shutil.rmtree(dir)
 
 def convert_DICOM_to_NIFTI_monai(root_dir, df_path):
-    # Convert all dicom files in the directory to nifti
+    '''
+    convert all dicom files in root_dir to nifti, will be saved in a new folder called NIFTI
+    root_dir: directory to convert
+    df_path: path to the csv file for the dataframe creation which logs the process
+    '''
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     out_dir = os.path.join(base_dir, 'NIFTI')
 
@@ -232,6 +236,10 @@ def convert_DICOM_to_NIFTI_monai(root_dir, df_path):
     return out_dir
 
 def extract_4D_images(root_dir):
+    '''
+    extract the number of channels of a nifti image, if 4 the first one will be kept and the filepath
+    will be added to a txt which is returned by the function
+    '''
     base_dir = os.path.dirname(os.path.normpath(root_dir))
     data_dir = os.path.join(base_dir, 'DATA')
     create_directory(data_dir)
@@ -258,6 +266,9 @@ def extract_4D_images(root_dir):
     return out_4D_file
 
 def create_label_file(nifti_dir,base_dir, images_4D_file, name='labels.txt'):
+    '''
+    creates the raw label file with 0 as the the default class label and extra info from the 4d step
+    '''
     base_dir = base_dir
     data_dir = os.path.join(base_dir, 'DATA')
     label_file = os.path.join(data_dir, name)
@@ -285,6 +296,11 @@ def create_label_file(nifti_dir,base_dir, images_4D_file, name='labels.txt'):
 
 
 def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
+    '''
+    function which preprocesses the nifti volumes and saves them afterwards to individual slices
+    resamples the images to x*y*z, puts them in LAS orientation, scales volume intensity between 0 and 1
+    and saves 25 individual slices per volume. Logs in df_path csv if conversion was successfull
+    '''
     root_dataFolder = os.path.split(niftiDirec)[0]
 
     NIFTI_direc = niftiDirec
@@ -389,6 +405,10 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
 
 
 def protectConfig(configFile):
+    '''
+    creates a copy of the config file in order to prevent overwritting it in an undesired way due to an error in the
+    code
+    '''
     filename = os.path.basename(configFile)
     filepath = os.path.dirname(configFile)
     filenameCopy = filename.split('.yaml')[0]+'_copy.yaml'
@@ -397,6 +417,7 @@ def protectConfig(configFile):
     return configFile_copy
 
 def createDicomHeaderInfoCsv(DatasetPath):
+
     dicomPath = DatasetPath+'/DICOM_STRUCTURED'
     outPath = DatasetPath+'/DicomHeaderFrame.csv'
     dicts = []
@@ -416,53 +437,56 @@ def createDicomHeaderInfoCsv(DatasetPath):
                 'EchoTime':None,
                 'InversionTime':None
             }
-            data = pydicom.read_file(os.path.join(root, files[0]), stop_before_pixels=True)
-            dicomAttributeDict['structuredPath'] = root
             try:
-                dicomAttributeDict['InstanceCreationDate'] = data.InstanceCreationDate
+                data = pydicom.read_file(os.path.join(root, files[0]), stop_before_pixels=True)
+                dicomAttributeDict['structuredPath'] = root
+                try:
+                    dicomAttributeDict['InstanceCreationDate'] = data.InstanceCreationDate
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['Manufacturer'] = data.Manufacturer
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['Modality'] = data.Modality
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['SeriesDescription'] = data.SeriesDescription
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['PatientID'] = data.PatientID
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['ProtocolName'] = data.ProtocolName
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['StudyInstanceUID'] = data.StudyInstanceUID
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['SeriesInstanceUID'] = data.SeriesInstanceUID
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['RepetitionTime'] = data.RepetitionTime
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['EchoTime'] = data.EchoTime
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['InversionTime'] = data.InversionTime
+                except:
+                    pass
+                dicts.append(dicomAttributeDict)
             except:
-                pass
-            try:
-                dicomAttributeDict['Manufacturer'] = data.Manufacturer
-            except:
-                pass
-            try:
-                dicomAttributeDict['Modality'] = data.Modality
-            except:
-                pass
-            try:
-                dicomAttributeDict['SeriesDescription'] = data.SeriesDescription
-            except:
-                pass
-            try:
-                dicomAttributeDict['PatientID'] = data.PatientID
-            except:
-                pass
-            try:
-                dicomAttributeDict['ProtocolName'] = data.ProtocolName
-            except:
-                pass
-            try:
-                dicomAttributeDict['StudyInstanceUID'] = data.StudyInstanceUID
-            except:
-                pass
-            try:
-                dicomAttributeDict['SeriesInstanceUID'] = data.SeriesInstanceUID
-            except:
-                pass
-            try:
-                dicomAttributeDict['RepetitionTime'] = data.RepetitionTime
-            except:
-                pass
-            try:
-                dicomAttributeDict['EchoTime'] = data.EchoTime
-            except:
-                pass
-            try:
-                dicomAttributeDict['InversionTime'] = data.InversionTime
-            except:
-                pass
-            dicts.append(dicomAttributeDict)
+                continue
     df_dicom = pd.DataFrame(dicts)
     df_dicom.to_csv(outPath, index=False)
     return outPath
