@@ -1,7 +1,7 @@
 import os.path
 import shutil
 
-import Model_training as MTR
+import Model_training_new as MTR
 import Model_testing as MTE
 import Model_analysis as MA
 from Pytorch_monai.Utils import protectConfig
