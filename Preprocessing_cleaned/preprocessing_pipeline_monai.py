@@ -161,6 +161,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     config = args.configFile
     mode = args.mode
+    print(f'Preprocessing config file {config} using mode {mode}')
     if mode == "full":
         full_preprocessing(config)
     elif mode == "sorting":
