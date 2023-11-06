@@ -16,6 +16,80 @@ from sklearn.model_selection import train_test_split
 import random
 import matplotlib.pyplot as plt
 
+def choosetransform(augment=False, slice_scaling=False):
+    if slice_scaling:
+        if augment:
+            trainTransforms = monai.transforms.Compose(
+                [
+                    monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
+                    monai.transforms.EnsureTyped(keys=['image']),
+                    monai.transforms.EnsureChannelFirstd(keys=['image']),
+                    monai.transforms.ScaleIntensityd(keys=['image']),
+                    monai.transforms.RandAffined(
+                        keys=['image'],
+                        prob=0.5,
+                        rotate_range=0.2,
+                        shear_range=((-0.2, 0.2), (-0.2, 0.2)),
+                        translate_range=((-20, 20), (-20, 20)),
+                        device=device,
+                        cache_grid=True
+                    ),
+                    monai.transforms.RandZoomd(keys=['image'],prob=0.25, min_zoom=0.8, max_zoom=1.2)
+                ]
+            )
+        else:
+            trainTransforms = monai.transforms.Compose(
+                [
+                    monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
+                    monai.transforms.EnsureTyped(keys=['image']),
+                    monai.transforms.EnsureChannelFirstd(keys=['image']),
+                    monai.transforms.ScaleIntensityd(keys=['image'])
+                ]
+            )
+        valTransforms = monai.transforms.Compose(
+            [
+                monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
+                monai.transforms.EnsureTyped(keys=['image']),
+                monai.transforms.EnsureChannelFirstd(keys=['image']),
+                monai.transforms.ScaleIntensityd(keys=['image']),
+            ]
+        )
+    else:
+        if augment:
+            trainTransforms = monai.transforms.Compose(
+                [
+                    monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
+                    monai.transforms.EnsureTyped(keys=['image']),
+                    monai.transforms.EnsureChannelFirstd(keys=['image']),
+                    monai.transforms.RandAffined(
+                        keys=['image'],
+                        prob=0.5,
+                        rotate_range=0.2,
+                        shear_range=((-0.2, 0.2), (-0.2, 0.2)),
+                        translate_range=((-20, 20), (-20, 20)),
+                        device=device,
+                        cache_grid=True
+                    ),
+                    monai.transforms.RandZoomd(keys=['image'],prob=0.25, min_zoom=0.8, max_zoom=1.2)
+                ]
+            )
+        else:
+            trainTransforms = monai.transforms.Compose(
+                [
+                    monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
+                    monai.transforms.EnsureTyped(keys=['image']),
+                    monai.transforms.EnsureChannelFirstd(keys=['image'])
+                ]
+            )
+        valTransforms = monai.transforms.Compose(
+            [
+                monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
+                monai.transforms.EnsureTyped(keys=['image']),
+                monai.transforms.EnsureChannelFirstd(keys=['image'])
+            ]
+        )
+    return trainTransforms, valTransforms
+
 def saveNiftiToImage(imagedata, save_path, title):
     '''
     saves the array in imagedata into the save_path with title as title
@@ -54,7 +128,7 @@ def ensureUnfrozenLayers(model, verbose=False):
             para.requires_grad = True
     return model
 
-def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None, freeze_conv=False):
+def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None, freeze_conv=False, sliceScaling=False):
     '''
     Loads the model with transfer weights if they are given and puts it into the specified device
     Also initializes and returns the optimier, loss function and lr_scheduler
@@ -84,45 +158,15 @@ def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None, free
 
 
 
-def prepareData(train_label_file, batch_size,N_train_classes, crv, crt, augment=False, randomWeightedSampling=False, device='cpu'):
+def prepareData(
+        train_label_file, batch_size,N_train_classes, crv, crt,
+        augment=False, randomWeightedSampling=False, per_slice_normalization=False ,device='cpu'):
     # load imagefilenames and onehot encoded labels
     train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file,nb_classes=N_train_classes)
     print("Detected %d classes in training data" % N_train_classes)
 
     #initialize monai transforms
-    if augment:
-        trainTransforms = monai.transforms.Compose(
-            [
-                monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
-                monai.transforms.EnsureTyped(keys=['image']),
-                monai.transforms.EnsureChannelFirstd(keys=['image']),
-                monai.transforms.RandAffined(
-                    keys=['image'],
-                    prob=0.5,
-                    rotate_range=0.2,
-                    shear_range=((-0.2, 0.2), (-0.2, 0.2)),
-                    translate_range=((-20, 20), (-20, 20)),
-                    device=device,
-                    cache_grid=True
-                ),
-                monai.transforms.RandZoomd(keys=['image'],prob=0.25, min_zoom=0.8, max_zoom=1.2)
-            ]
-        )
-    else:
-        trainTransforms = monai.transforms.Compose(
-            [
-                monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
-                monai.transforms.EnsureTyped(keys=['image']),
-                monai.transforms.EnsureChannelFirstd(keys=['image'])
-            ]
-        )
-    valTransforms = monai.transforms.Compose(
-        [
-            monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
-            monai.transforms.EnsureTyped(keys=['image']),
-            monai.transforms.EnsureChannelFirstd(keys=['image'])
-        ]
-    )
+    trainTransforms, valTransforms = choosetransform(augment, per_slice_normalization)
 
     #create data dicitionaries
     train_image_labels_noh = np.argmax(train_image_labels,axis=1)
@@ -240,6 +284,7 @@ def main(configFile='config.yaml'):
     nb_epoch = cfg['network']['nb_epoch']
     transfer_weights = cfg['training']['transfer_weights_path']
     freezeConv = cfg['training']['freeze']
+    per_slice_normalization = cfg['training']['per_slice_normalization']
     cache_rate_train = cfg['training']['cache_rate_train']
     cache_rate_val = cfg['training']['cache_rate_val']
     augment = cfg['training']['augment']
@@ -258,7 +303,9 @@ def main(configFile='config.yaml'):
     torch.multiprocessing.set_start_method('spawn')
 
     # initialize model and data
-    model, optimizer, loss_function, rop = prepareModelAndCallbacks(N_train_classes, gpu, transfer_weights, freezeConv)
+    model, optimizer, loss_function, rop = prepareModelAndCallbacks(
+        N_train_classes, gpu, transfer_weights, freezeConv, per_slice_normalization
+    )
     train_loader, val_loader, trainTransforms, valTransforms = prepareData(
         train_label_file=train_label_file, batch_size=batch_size, N_train_classes=N_train_classes,
         crv=cache_rate_val, crt=cache_rate_train, augment=augment, randomWeightedSampling=randomWeightedSampling,
@@ -282,12 +329,16 @@ def main(configFile='config.yaml'):
             'augmentation': augment,
             'random_weighted_sampling':randomWeightedSampling,
             'transfer_weights':transfer_weights,
-            'freeze_conv':freezeConv
+            'freeze_conv':freezeConv,
+            'per_slice_normalization':per_slice_normalization
         }
     )
     run_id = run.id # We remember here the run ID to be able to write the evaluation metrics
 
-    trainloss, valloss, modelPath = train(model,loss_function,train_loader,val_loader,optimizer,rop,nb_epoch,device=gpu,val_freq=1, model_name=model_name, output_folder=output_folder)
+    trainloss, valloss, modelPath = train(
+        model,loss_function,train_loader,val_loader,optimizer,rop,nb_epoch,
+        device=gpu,val_freq=1, model_name=model_name, output_folder=output_folder
+    )
     return trainloss, valloss, modelPath
 
 

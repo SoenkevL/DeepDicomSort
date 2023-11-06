@@ -8,7 +8,6 @@ import yaml
 import prep_functions as prep
 import time
 import argparse
-import pandas as pd
 
 
 def create_directory(dir):

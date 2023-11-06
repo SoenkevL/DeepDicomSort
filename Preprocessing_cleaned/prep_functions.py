@@ -265,7 +265,7 @@ def extract_4D_images(root_dir):
                         the_file.write(file_name + '\n')
     return out_4D_file
 
-def create_label_file(nifti_dir,base_dir, images_4D_file, name='labels.txt'):
+def create_label_file(nifti_dir,base_dir, images_4D_file, name='Labels.txt'):
     '''
     creates the raw label file with 0 as the the default class label and extra info from the 4d step
     '''
@@ -390,17 +390,19 @@ def preprocessImagesMonai(niftiDirec, x, y, z, df_path):
         finally:
             continue
     print(converted_Files)
+
+    create_label_file(nifti_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
+
     df = pd.read_csv(df_path)
-    if df.empty:
+    try:
+        for niftipath in All_converted_files:
+            df.loc[df['NIFTI_path']==niftipath,'sliced'] = True
+    except:
         df_path = os.path.join(os.path.dirname(df_path),'ConversionFrame.csv')
         df['NIFTI_path'] = pd.Series(All_converted_files)
         df['sliced'] = True
-    else:
-        for niftipath in All_converted_files:
-            df.loc[df['NIFTI_path']==niftipath,'sliced'] = True
     df.to_csv(df_path, index=False)
 
-    create_label_file(nifti_slices_direc,root_dataFolder, images_4D_file,'Labels.txt')
     return nifti_slices_direc
 
 
