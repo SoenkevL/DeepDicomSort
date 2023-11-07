@@ -180,21 +180,23 @@ def prepareData(
     print(np.unique(valLabelList,return_counts=True))
 
     #create datasets and loaders
-    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=crt, cache_num=60000,
-                                       num_workers=6,progress=True)
-    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=crv,cache_num=60000,
-                                     num_workers=6,progress=True)
+    train_ds = monai.data.CacheDataset(data=train_data_dict,transform=trainTransforms,cache_rate=crt, cache_num=40000,
+                                       num_workers=4,progress=True)
+    val_ds = monai.data.CacheDataset(data=val_data_dict,transform=valTransforms,cache_rate=crv,cache_num=40000,
+                                     num_workers=4,progress=True)
     if randomWeightedSampling:
         classCounts = [dictItem['label'] for dictItem in train_data_dict]
         classCounts = np.sum(classCounts, axis=0)
+        print(f'classCount: {classCounts}')
         weights = 1./classCounts
         weights = [0 if np.isinf(x) else x for x in weights]
         LabelWeights = [weights[x] for x in trainLabelList]
+        print(f'Labelweights: {weights}')
         dwrs = WeightedRandomSampler(LabelWeights, len(LabelWeights), replacement=True)
-        train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,num_workers=4,sampler=dwrs)
+        train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,num_workers=0,sampler=dwrs)
     else:
-        train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=4)
-    val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=4)
+        train_loader = monai.data.DataLoader(train_ds,batch_size=batch_size,shuffle=True,num_workers=0)
+    val_loader = monai.data.DataLoader(val_ds,batch_size=batch_size,shuffle=True,num_workers=0)
     return train_loader, val_loader, trainTransforms, valTransforms
 
 
