@@ -45,6 +45,9 @@ def load_data(test_label_file, labelmap):
     return ResultsFrame, test_loader
 
 def testing(model, test_loader, device, ResultsFrame, output_folder, model_name, meta_dict):
+    '''
+    creates a dataframe which stores the results of the model
+    '''
     for datapoint in tqdm(test_loader):
         image = datapoint['image'].float().to(device=device)
         groundTruth = np.argmax(datapoint['label']).to('cpu').detach().numpy()
@@ -62,12 +65,14 @@ def testing(model, test_loader, device, ResultsFrame, output_folder, model_name,
         else:
             ResultsFrame = pd.concat([ResultsFrame,result],ignore_index=True)
 
+
+
     fileCounter=0
     out_file = os.path.join(output_folder, 'Predictions_' + model_name + '.csv')
-    out_meta_file = os.path.join(output_folder, 'Predictions_' + model_name + 'metaDict.json')
+    out_meta_file = os.path.join(output_folder, 'Predictions_' + model_name + '_metaDict.json')
     while os.path.exists(out_file):
         out_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + '.csv')
-        out_meta_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + 'metaDict.json')
+        out_meta_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + '_metaDict.json')
         fileCounter+=1
         if fileCounter==5:
             print('too many copies copy 5 will be overriden')
@@ -122,4 +127,4 @@ if __name__=='__main__':
     configFile = args.configFile
     outfile = main(configFile)
     print('finished testing')
-    MA.main(outfile, testing=True, certainties = '[1, 0.8, 0.6]')
+    MA.main(outfile, testing=True, certainties='[1, 0.8, 0.6]')

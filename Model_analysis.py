@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 import os
 import numpy as np
-from sklearn.metrics import confusion_matrix, accuracy_score, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, balanced_accuracy_score, ConfusionMatrixDisplay, roc_auc_score, f1_score
 import matplotlib.pyplot as plt
 
 def initialize(outfile):
@@ -14,7 +14,8 @@ def initialize(outfile):
     modelname = out_file.split('/')[-1].split(':')[0:-1]
     modelname = str.join(':',modelname)
     ResultFrame = pd.read_csv(out_file)
-    meta_dict_file = out_file.replace('.csv','metaDict.json')
+    meta_dict_file = out_file.replace('.csv','_metaDict.json')
+    result_dict_file = out_file.replace('.csv','_resultDict.json')
     with open(meta_dict_file,'r') as mf:
         meta_dict = json.load(mf)
     return out_file_folder, modelname, ResultFrame, meta_dict
@@ -51,12 +52,18 @@ def processDataframe(out_file_folder, modelname, ResultFrame, meta_dict):
     FullResultFrame.to_csv(os.path.join(out_file_folder,f'{modelname}_ensamblePredictions.csv'),index=True)
     return FullResultFrame, NumSlicesPerClass
 
-def createCF_matrix(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_dict, certainties=[]):
+def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_dict, result_dict_file, certainties=[]):
     StringLabels = list(meta_dict['labelmap'].keys())
     NumericalLabels = list(meta_dict['labelmap'].values())
+    resultDict = {}
     #results by slice basis
     mc = confusion_matrix(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'],labels=NumericalLabels)
-    ac = accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'])
+    ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'])
+    f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro')
+    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro', multi_class='ovo')
+    resultDict['ac_slice'] = ac
+    resultDict['f1_slice'] = f1
+    resultDict['auc_slice'] = auc_score
     mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
     mc_display.plot(cmap='viridis')
     plt.grid(False)
@@ -66,7 +73,13 @@ def createCF_matrix(FullResultFrame, out_file, NumSlicesPerClass, modelname, met
     #majority vote without certainty
     mc = confusion_matrix(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'],labels=NumericalLabels)
     mc = mc/NumSlicesPerClass
-    ac = accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
+    ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
+    f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro')
+    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro',
+                              multi_class='ovo')
+    resultDict['ac_vote_0'] = ac
+    resultDict['f1_vote_0'] = f1
+    resultDict['auc_vote_0'] = auc_score
     mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
     mc_display.plot(cmap='viridis')
     plt.grid(False)
@@ -88,7 +101,15 @@ def createCF_matrix(FullResultFrame, out_file, NumSlicesPerClass, modelname, met
         for certaintyThreshhold in certainties:
             mc = confusion_matrix(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold],labels=NumericalLabels)
             mc = mc/NumSlicesPerClass
-            ac = accuracy_score(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold])
+            ytrue = FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold]
+            ypred = FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold]
+            ac = balanced_accuracy_score(y_true=ytrue,y_pred=ypred)
+            f1 = f1_score(y_true=ytrue,y_pred=ypred, average='macro')
+            auc_score = roc_auc_score(y_true=ytrue,y_pred=ypred, average='macro',
+                                      multi_class='ovo')
+            resultDict[f'ac_vote_{certaintyThreshhold}'] = ac
+            resultDict[f'f1_vote_{certaintyThreshhold}'] = f1
+            resultDict[f'auc_vote_{certaintyThreshhold}'] = auc_score
             # mc_display = ConfusionMatrixDisplay(mc,display_labels=['T1','T1_c','T2','FLAIR','seg'])
             mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
             mc_display.plot(cmap='viridis')
@@ -96,12 +117,18 @@ def createCF_matrix(FullResultFrame, out_file, NumSlicesPerClass, modelname, met
             plt.xticks(rotation=90)
             plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote with minimum certainty {certaintyThreshhold}')
             plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_majorityVote_withCertaintyOf{certaintyThreshhold}_heatmap.png'))
+    with open(result_dict_file,'w') as f:
+        json.dump(resultDict,f)
+
 
 def main(outfile, testing=False,certainties=[]):
-    out_file_folder, modelname, ResultFrame_initial, meta_dict = initialize(outfile)
+    out_file_folder, modelname, ResultFrame_initial, meta_dict, result_dict_file = initialize(outfile)
     ResultFrame_processed, nslices = processDataframe(out_file_folder, modelname, ResultFrame_initial, meta_dict)
     if testing:
-        createCF_matrix(ResultFrame_processed, outfile, NumSlicesPerClass=nslices, modelname=modelname, meta_dict=meta_dict, certainties=certainties)
+        createMetrics(
+            ResultFrame_processed, outfile, NumSlicesPerClass=nslices, modelname=modelname,
+            meta_dict=meta_dict, certainties=certainties, result_dict_file=result_dict_file
+        )
 
 
 
