@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 import random
 import matplotlib.pyplot as plt
 
-def choosetransform(augment=False, slice_scaling=False):
+def choosetransform(augment=False, slice_scaling=False, device='cpu'):
     if slice_scaling:
         if augment:
             trainTransforms = monai.transforms.Compose(
@@ -166,7 +166,7 @@ def prepareData(
     print("Detected %d classes in training data" % N_train_classes)
 
     #initialize monai transforms
-    trainTransforms, valTransforms = choosetransform(augment, per_slice_normalization)
+    trainTransforms, valTransforms = choosetransform(augment, per_slice_normalization, device)
 
     #create data dicitionaries
     train_image_labels_noh = np.argmax(train_image_labels,axis=1)

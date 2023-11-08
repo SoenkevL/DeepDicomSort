@@ -429,6 +429,7 @@ def createDicomHeaderInfoCsv(DatasetPath):
                 'structuredPath':None,
                 'InstanceCreationDate':None,
                 'Manufacturer':None,
+                'Institution':None,
                 'Modality':None,
                 'SeriesDescription':None,
                 'PatientID':None,
@@ -448,6 +449,10 @@ def createDicomHeaderInfoCsv(DatasetPath):
                     pass
                 try:
                     dicomAttributeDict['Manufacturer'] = data.Manufacturer
+                except:
+                    pass
+                try:
+                    dicomAttributeDict['Institution'] = data.InstitutionName
                 except:
                     pass
                 try:

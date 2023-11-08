@@ -79,7 +79,7 @@ def testing(model, test_loader, device, ResultsFrame, output_folder, model_name,
             break
     ResultsFrame.to_csv(out_file,index=False)
     with open(out_meta_file,'w') as f:
-        json.dump(meta_dict,f)
+        json.dump(meta_dict,f, indent="")
     return out_file
 
 

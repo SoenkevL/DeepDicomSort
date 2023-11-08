@@ -18,7 +18,7 @@ def initialize(outfile):
     result_dict_file = out_file.replace('.csv','_resultDict.json')
     with open(meta_dict_file,'r') as mf:
         meta_dict = json.load(mf)
-    return out_file_folder, modelname, ResultFrame, meta_dict
+    return out_file_folder, modelname, ResultFrame, meta_dict, result_dict_file
 
 def splitImageID(dataframe):
     imageID = dataframe['imageID']
@@ -56,11 +56,16 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
     StringLabels = list(meta_dict['labelmap'].keys())
     NumericalLabels = list(meta_dict['labelmap'].values())
     resultDict = {}
+    cols = FullResultFrame.columns
+    raw_cols = [col for col in cols if 'raw' in col]
     #results by slice basis
-    mc = confusion_matrix(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'],labels=NumericalLabels)
+    mc = confusion_matrix(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'],
+                          labels=NumericalLabels, normalize='all')
     ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'])
     f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro')
-    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro', multi_class='ovo')
+    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_score=FullResultFrame[raw_cols], average='macro',
+                              multi_class='ovo', labels=NumericalLabels
+                              )
     resultDict['ac_slice'] = ac
     resultDict['f1_slice'] = f1
     resultDict['auc_slice'] = auc_score
@@ -71,12 +76,15 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
     plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for indivdual slices')
     plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_individualSlices_heatmap.png'))
     #majority vote without certainty
-    mc = confusion_matrix(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'],labels=NumericalLabels)
+    mc = confusion_matrix(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'],
+                          labels=NumericalLabels, normalize='all')
     mc = mc/NumSlicesPerClass
     ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
     f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro')
-    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro',
-                              multi_class='ovo')
+    raw_preds = FullResultFrame[raw_cols].to_numpy()
+    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_score=raw_preds, average='macro',
+                              multi_class='ovo', labels=NumericalLabels
+                              )
     resultDict['ac_vote_0'] = ac
     resultDict['f1_vote_0'] = f1
     resultDict['auc_vote_0'] = auc_score
@@ -99,14 +107,18 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
             except:
                 print('something went wrong in putting in the certainties')
         for certaintyThreshhold in certainties:
-            mc = confusion_matrix(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold],labels=NumericalLabels)
+            mc = confusion_matrix(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],
+                                  y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold],
+                                  labels=NumericalLabels, normalize='all'
+                                  )
             mc = mc/NumSlicesPerClass
             ytrue = FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold]
             ypred = FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold]
             ac = balanced_accuracy_score(y_true=ytrue,y_pred=ypred)
             f1 = f1_score(y_true=ytrue,y_pred=ypred, average='macro')
-            auc_score = roc_auc_score(y_true=ytrue,y_pred=ypred, average='macro',
-                                      multi_class='ovo')
+            auc_score = roc_auc_score(y_true=ytrue,
+                                      y_score=FullResultFrame[raw_cols][FullResultFrame['certainty']>=certaintyThreshhold],
+                                      average='macro', multi_class='ovo', labels=NumericalLabels)
             resultDict[f'ac_vote_{certaintyThreshhold}'] = ac
             resultDict[f'f1_vote_{certaintyThreshhold}'] = f1
             resultDict[f'auc_vote_{certaintyThreshhold}'] = auc_score
@@ -118,7 +130,7 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
             plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote with minimum certainty {certaintyThreshhold}')
             plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_majorityVote_withCertaintyOf{certaintyThreshhold}_heatmap.png'))
     with open(result_dict_file,'w') as f:
-        json.dump(resultDict,f)
+        json.dump(resultDict,f, indent="")
 
 
 def main(outfile, testing=False,certainties=[]):
