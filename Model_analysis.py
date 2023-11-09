@@ -59,8 +59,6 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
     cols = FullResultFrame.columns
     raw_cols = [col for col in cols if 'raw' in col]
     #results by slice basis
-    mc = confusion_matrix(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'],
-                          labels=NumericalLabels, normalize='all')
     ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'])
     f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro')
     auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_score=FullResultFrame[raw_cols], average='macro',
@@ -69,16 +67,14 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
     resultDict['ac_slice'] = ac
     resultDict['f1_slice'] = f1
     resultDict['auc_slice'] = auc_score
-    mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
-    mc_display.plot(cmap='viridis')
+    mc = ConfusionMatrixDisplay.from_predictions(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'],
+                        labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
+                        include_values=False)   
     plt.grid(False)
     plt.xticks(rotation=90)
     plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for indivdual slices')
     plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_individualSlices_heatmap.png'))
     #majority vote without certainty
-    mc = confusion_matrix(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'],
-                          labels=NumericalLabels, normalize='all')
-    mc = mc/NumSlicesPerClass
     ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
     f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro')
     raw_preds = FullResultFrame[raw_cols].to_numpy()
@@ -88,8 +84,9 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
     resultDict['ac_vote_0'] = ac
     resultDict['f1_vote_0'] = f1
     resultDict['auc_vote_0'] = auc_score
-    mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
-    mc_display.plot(cmap='viridis')
+    mc = ConfusionMatrixDisplay.from_predictions(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'],
+                        labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
+                        include_values=False)
     plt.grid(False)
     plt.xticks(rotation=90)
     plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote')
@@ -109,7 +106,7 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
         for certaintyThreshhold in certainties:
             mc = confusion_matrix(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],
                                   y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold],
-                                  labels=NumericalLabels, normalize='all'
+                                  labels=NumericalLabels, normalize='true'
                                   )
             mc = mc/NumSlicesPerClass
             ytrue = FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold]
@@ -122,9 +119,9 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
             resultDict[f'ac_vote_{certaintyThreshhold}'] = ac
             resultDict[f'f1_vote_{certaintyThreshhold}'] = f1
             resultDict[f'auc_vote_{certaintyThreshhold}'] = auc_score
-            # mc_display = ConfusionMatrixDisplay(mc,display_labels=['T1','T1_c','T2','FLAIR','seg'])
-            mc_display = ConfusionMatrixDisplay(mc,display_labels=StringLabels)
-            mc_display.plot(cmap='viridis')
+            mc = ConfusionMatrixDisplay.from_predictions(y_true=ytrue, y_pred=ypred,
+                        labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
+                        include_values=False)
             plt.grid(False)
             plt.xticks(rotation=90)
             plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote with minimum certainty {certaintyThreshhold}')
