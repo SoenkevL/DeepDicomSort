@@ -28,7 +28,8 @@ def load_data(test_label_file, labelmap):
         [
             monai.transforms.LoadImaged(keys=['image'],image_only=True,reader='NibabelReader'),
             monai.transforms.EnsureTyped(keys=['image']),
-            monai.transforms.EnsureChannelFirstd(keys=['image'])
+            monai.transforms.EnsureChannelFirstd(keys=['image']),
+            monai.transforms.ScaleIntensityd(keys=['image'])
         ]
     )
 

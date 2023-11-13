@@ -57,7 +57,7 @@ def sort_DICOM_to_structured_folders(root_dir, df_path, move_files=False):
                     else:
                         shutil.copy(full_file_path, dicom_output_folder)
                     outputFolders.append(dicom_output_folder)
-                except InvalidDicomError:
+                except:
                     pass
             for struct_folder in set(outputFolders):
                 dataPathList.append([root, struct_folder])
