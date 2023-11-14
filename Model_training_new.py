@@ -90,18 +90,6 @@ def choosetransform(augment=False, slice_scaling=False, device='cpu'):
         )
     return trainTransforms, valTransforms
 
-def saveNiftiToImage(imagedata, save_path, title):
-    '''
-    saves the array in imagedata into the save_path with title as title
-    '''
-    plt.figure()
-    imagedata = np.squeeze(imagedata)
-    plt.imshow(imagedata,cmap='gray')
-    plt.title(title)
-    plt.savefig(save_path)
-    plt.close('all')
-
-
 def freezeConvLayers(model, verbose=False):
     '''
     freezes all layers which contain 'conv' in their name
@@ -219,15 +207,6 @@ def train(
             optimizer.zero_grad()
             images = batch['image'].float().to(device)
             labels = batch['label'].float().to(device)
-            if visualize > np.random.rand(1):
-                plt_images = images.to('cpu')[0]
-                image_path = os.path.join(output_folder,'images',f'epoch_{epoch}_batch{i}.png')
-                if not os.path.exists(os.path.dirname(image_path)):
-                    os.mkdir(os.path.dirname(image_path))
-                saveNiftiToImage(plt_images, image_path, '')
-
-
-
             output = model(images)
             loss = loss_function(output,labels)
             epoch_loss += loss.item()

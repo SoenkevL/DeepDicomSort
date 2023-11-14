@@ -52,14 +52,6 @@ def processDataframe(out_file_folder, modelname, ResultFrame, meta_dict):
     FullResultFrame.to_csv(os.path.join(out_file_folder,f'{modelname}_ensamblePredictions.csv'),index=True)
     return FullResultFrame, NumSlicesPerClass
 
-def rebinResults(ResultFrame):
-    non_DDS_scantypes = [4,6,7,8,10,11,12,14,16]
-    otherScantypes = [4,11,12] #FS, BOLD, FlowSensitive
-    T1_scantypes = [0,15] #T1, Hippo
-    diffusion_scantypes = [9,10,16] #DWI, ADC, DTI
-    perfusion_scantypes = [13,14] #PWI, ASL
-    susceptibility_scantypes = [6,7,8] #SWI, GRE, T2*
-
 def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_dict, result_dict_file, certainties=[]):
     StringLabels = list(meta_dict['labelmap'].keys())
     NumericalLabels = list(meta_dict['labelmap'].values())
