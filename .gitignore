@@ -116,3 +116,4 @@ config_BRATS.yaml
 Pytorch_monai/secrets.py
 wandb
 *.csv
+*.png

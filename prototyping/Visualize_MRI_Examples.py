@@ -20,4 +20,4 @@ def createMRIexamples(vis_frame_row, output_folder):
         os.makedirs(outpath)
     outfile = os.path.join(outpath, f"{vis_frame_row['string_label']}__{vis_frame_row['dataset']}__{counter}.png")
     saveNifti(vis_frame_row['ID'], outfile)
-visualize_frame.apply(createMRIexamples, output_folder='', axis=1)
+visualize_frame.apply(createMRIexamples, output_folder='example_images', axis=1)

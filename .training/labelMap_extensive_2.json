@@ -11,7 +11,7 @@
     "DWI":9,
     "ADC":10,
     "BOLD":11,
-    "FlowSensitve":12,
+    "FlowSensitve":12, //rename this class
     "PWI":13,
     "ASL":14,
     "Hippo":15,
