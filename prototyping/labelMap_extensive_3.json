@@ -10,10 +10,9 @@
     "DWI":8,
     "ADC":9,
     "BOLD":10,
-    "FlowSensitve":11,
+    "angio":11,
     "PWI":12,
     "ASL":13,
-    "Hippo":14,
-    "DTI":15,
-    "Other":16
+    "DTI":14,
+    "Other":15
 }
