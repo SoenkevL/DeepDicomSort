@@ -23,7 +23,7 @@ with open(configFile,'w') as ymlfile:
 print('finished training, running test file now')
 predictions = MTE.main(configFile)
 print('finished predicting, analysing the results now')
-MA.main(predictions, testing=True, certainties='[1, 0.8, 0.6]')
+MA.main(predictions, testing=True, certainties='[1, 0.8, 0.6]', vis=True)
 print('analysed results and created relevant outputs, pipeline finished')
 
 

@@ -5,6 +5,7 @@ import os
 import numpy as np
 from sklearn.metrics import confusion_matrix, balanced_accuracy_score, ConfusionMatrixDisplay, roc_auc_score, f1_score
 import matplotlib.pyplot as plt
+import nibabel as nib
 
 def initialize(outfile):
     print('initializing')
@@ -51,6 +52,78 @@ def processDataframe(out_file_folder, modelname, ResultFrame, meta_dict):
     FullResultFrame = FullResultFrame.set_index('slicenum',append=True).sort_index()
     FullResultFrame.to_csv(os.path.join(out_file_folder,f'{modelname}_ensamblePredictions.csv'),index=True)
     return FullResultFrame, NumSlicesPerClass
+
+
+def extractDataset(ID):
+    if 'ADNI2' in ID:
+        return 'ADNI2'
+    elif 'ADNI3' in ID:
+        return 'ADNI3'
+    elif 'OASIS3' in ID:
+        return 'OASIS3'
+    elif 'egd' in ID:
+        return 'egd'
+    elif 'Rstudy' in ID:
+        return 'rss'
+    elif 'HeartBrain' in ID:
+        return 'HeartBrain'
+    elif 'small' in ID:
+        return 'small'
+    return None
+
+
+def saveNifti(img_path, outfile):
+    fig, ax = plt.subplots()
+    nimg = nib.load(img_path)
+    data = nimg.get_fdata()
+    ax.imshow(data[:,:],cmap='gray')
+    ax.axis('off')
+    fig.savefig(outfile, pad_inches=0.01, bbox_inches='tight')
+    plt.close('all')
+
+
+def createMRIexamples(vis_frame_row, output_folder):
+    outpath = os.path.join(output_folder, vis_frame_row['string_label'], vis_frame_row['dataset'])
+    counter = 0
+    if not os.path.exists(outpath):
+        os.makedirs(outpath)
+    outfile = os.path.join(outpath, f"true_{vis_frame_row['string_label']}__pred_{vis_frame_row['string_vote']}"
+                                    f"__orig_{vis_frame_row['dataset']}__{counter}.png")
+    while os.path.exists(outfile):
+        counter += 1
+        outfile = os.path.join(outpath, f"true_{vis_frame_row['string_label']}__pred_{vis_frame_row['string_vote']}"
+                                        f"__orig_{vis_frame_row['dataset']}__{counter}.png")
+    saveNifti(vis_frame_row['imageID'], outfile)
+
+
+def visualize_examples(out_file_folder, full_result_frame, meta_dict):
+    label_name_list = list(meta_dict['labelmap'].keys())
+    df = full_result_frame.copy()
+    df['string_label'] = df['groundTruth'].apply(lambda x: label_name_list[x])
+    df['dataset'] = df['imageID'].apply(extractDataset)
+    labels = df['string_label'].unique()
+    df['center_slide'] = df['imageID'].apply(lambda x: '__s12' in x)
+    df['correctPrediction'] = df['vote'] == df['groundTruth']
+    df['string_vote'] = df['vote'].apply(lambda x: label_name_list[int(x)])
+    VisualizeFrame = df[df['center_slide']]
+    from sklearn.model_selection import train_test_split
+    visualize_frame = pd.DataFrame()
+    for label in labels:
+        temp1 = VisualizeFrame[VisualizeFrame['string_label']==label]
+        datasets = temp1['dataset'].unique()
+        for dataset in datasets:
+            df = temp1[temp1['dataset']==dataset]
+            try:
+                visualize, _ = train_test_split(df, train_size=10, shuffle=True, random_state=42, stratify=df['correctPrediction'])
+            except ValueError:
+                visualize = df
+            visualize_frame = pd.concat([visualize_frame,visualize], axis=0)
+    if not os.path.exists(f'{out_file_folder}/example_images'):
+        os.makedirs(f'{out_file_folder}/example_images')
+    visualize_frame.to_csv(f'{out_file_folder}/example_images/vis_frame.csv')
+    visualize_frame.apply(createMRIexamples, output_folder=f'{out_file_folder}/example_images', axis=1)
+
+
 
 def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_dict, result_dict_file, certainties=[]):
     StringLabels = list(meta_dict['labelmap'].keys())
@@ -130,7 +203,7 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
         json.dump(resultDict,f, indent="")
 
 
-def main(outfile, testing=False,certainties=[]):
+def main(outfile, testing=False,certainties=[], vis=False):
     out_file_folder, modelname, ResultFrame_initial, meta_dict, result_dict_file = initialize(outfile)
     ResultFrame_processed, nslices = processDataframe(out_file_folder, modelname, ResultFrame_initial, meta_dict)
     if testing:
@@ -138,6 +211,8 @@ def main(outfile, testing=False,certainties=[]):
             ResultFrame_processed, outfile, NumSlicesPerClass=nslices, modelname=modelname,
             meta_dict=meta_dict, certainties=certainties, result_dict_file=result_dict_file
         )
+    if vis:
+        visualize_examples(out_file_folder, ResultFrame_processed, meta_dict)
 
 
 
@@ -145,11 +220,13 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='This is the analysis of the results created in the model testing/prediction')
     parser.add_argument('-o','--outfile', action='store',metavar='o', help='pass here the filepath that was created by ModelTesting/predicting')
     parser.add_argument('-t','--testing',action='store_true', help='Pass this flag if testing should be done instead of only predictiong \n if testing results like accuracy and confusion matrices should be computed')
+    parser.add_argument('-v', '--visualize', action='store_true', help='visualize examples of correclty and misspredicted classes')
     parser.add_argument('--certainties',action='store',metavar='cert', default=[], help='specify a comma septerated string of certainties that should be used for the testing has to be in [0,1]. This needs to have the -t flag to be set')
     args = parser.parse_args()
     out_file = args.outfile
     testing = args.testing
     certainties = args.certainties
-    main(out_file, testing, certainties)
+    visualize = args.visualize
+    main(out_file, testing, certainties, visualize)
     print('finished analysing results')
 
