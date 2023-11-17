@@ -10,7 +10,7 @@
     "DWI":8,
     "ADC":9,
     "BOLD":10,
-    "angiogram":11,
+    "angio":11,
     "PWI":12,
     "ASL":13,
     "DTI":14,
