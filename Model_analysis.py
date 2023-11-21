@@ -144,8 +144,8 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
                         labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
                         include_values=False)   
     plt.grid(False)
-    plt.xticks(rotation=90)
-    plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for indivdual slices')
+    plt.xticks(rotation=45)
+    plt.tight_layout(pad=0.05)
     plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_individualSlices_heatmap.png'))
     #majority vote without certainty
     ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
@@ -161,8 +161,8 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
                         labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
                         include_values=False)
     plt.grid(False)
-    plt.xticks(rotation=90)
-    plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote')
+    plt.xticks(rotation=45)
+    plt.tight_layout(pad=0.05)
     plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_majorityVote_heatmap.png'))
     if certainties:
         c = certainties.split(',')
@@ -177,11 +177,6 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
             except:
                 print('something went wrong in putting in the certainties')
         for certaintyThreshhold in certainties:
-            mc = confusion_matrix(y_true=FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold],
-                                  y_pred=FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold],
-                                  labels=NumericalLabels, normalize='true'
-                                  )
-            mc = mc/NumSlicesPerClass
             ytrue = FullResultFrame['groundTruth'][FullResultFrame['certainty']>=certaintyThreshhold]
             ypred = FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold]
             ac = balanced_accuracy_score(y_true=ytrue,y_pred=ypred)
@@ -196,8 +191,8 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
                         labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
                         include_values=False)
             plt.grid(False)
-            plt.xticks(rotation=90)
-            plt.title(f'model {modelname} with ac {ac*100:.2f}%\n for majorityVote with minimum certainty {certaintyThreshhold}')
+            plt.xticks(rotation=45)
+            plt.tight_layout(pad=0.05)
             plt.savefig(os.path.join(os.path.split(out_file)[0],f'{modelname}_majorityVote_withCertaintyOf{certaintyThreshhold}_heatmap.png'))
     with open(result_dict_file,'w') as f:
         json.dump(resultDict,f, indent="")

@@ -37,6 +37,8 @@ def full_preprocessing(config):
     df_path = cfg['preprocessing']['df_path']
     print(f'preprocessing {DICOM_FOLDER}')
 
+    if not os.path.exists(df_path):
+        os.makedirs(df_path, exist_ok=True)
     if os.path.splitext(df_path)[1]:
         pass
     else:
