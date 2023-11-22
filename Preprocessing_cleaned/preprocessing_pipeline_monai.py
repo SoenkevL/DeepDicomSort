@@ -5,7 +5,7 @@ and finally split each nifti volume into 25 2d slices
 '''
 import os
 import yaml
-import prep_functions as prep
+import Preprocessing_cleaned.prep_functions as prep
 import time
 import argparse
 
@@ -145,7 +145,6 @@ def nifti_processing(config):
     nifti_folder = os.path.join(os.path.dirname(DICOM_FOLDER),'NIFTI')
     print('applying monai transforms and splitting images')
     nifti_slices_folder = prep.preprocessImagesMonai(nifti_folder,x_image_size,y_image_size,z_image_size, df_path)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder \
