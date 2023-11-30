@@ -5,9 +5,13 @@ and finally split each nifti volume into 25 2d slices
 '''
 import os
 import yaml
-import Preprocessing_cleaned.prep_functions as prep
+try:
+    import Preprocessing_cleaned.prep_functions as prep
+except ImportError:
+    import prep_functions as prep
 import time
 import argparse
+import pandas as pd
 
 
 def create_directory(dir):
@@ -39,10 +43,9 @@ def full_preprocessing(config):
 
     if not os.path.exists(df_path):
         os.makedirs(df_path, exist_ok=True)
-    if os.path.splitext(df_path)[1]:
-        pass
-    else:
-        df_path = os.path.join(df_path,'FileFrame.csv')
+    df_path = os.path.join(df_path,'FileFrame.csv')
+    temp = pd.DataFrame()
+    temp.to_csv()
 
     print(f'number of elements in dicom folder:{len(os.listdir(DICOM_FOLDER))}')
     print('Sorting DICOM to structured folders....')
@@ -78,6 +81,8 @@ def dicom_sorting(config):
     df_path = cfg['preprocessing']['df_path']
     print(f'preprocessing {DICOM_FOLDER}')
 
+    if not os.path.exists(df_path):
+        os.makedirs(df_path, exist_ok=True)
     if os.path.splitext(df_path)[1]:
         pass
     else:
@@ -106,6 +111,8 @@ def dicom_to_nifti_from_structured(config):
     DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
     df_path = cfg['preprocessing']['df_path']
 
+    if not os.path.exists(df_path):
+        os.makedirs(df_path, exist_ok=True)
     if os.path.splitext(df_path)[1]:
         pass
     else:
@@ -137,6 +144,8 @@ def nifti_processing(config):
     DICOM_FOLDER = cfg['preprocessing']['root_dicom_folder']
     df_path = cfg['preprocessing']['df_path']
 
+    if not os.path.exists(df_path):
+        os.makedirs(df_path, exist_ok=True)
     if os.path.splitext(df_path)[1]:
         pass
     else:

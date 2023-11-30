@@ -136,8 +136,7 @@ def split_in_series(root_dir, df_path):
 
                 for i_dicom, index_type in zip(files, reverse_indices):
                     new_scan_dir = os.path.join(upper_folder, scan_name + '_Scan_' + str(i_sets[index_type]))
-                    if not os.path.exists(new_scan_dir):
-                        shutil.move(os.path.join(root, i_dicom), new_scan_dir)
+                    shutil.move(os.path.join(root, i_dicom), new_scan_dir)
                 shutil.rmtree(root)
     if splitedSeries:
         df = pd.read_csv(df_path)

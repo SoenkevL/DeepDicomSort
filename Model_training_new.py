@@ -273,6 +273,10 @@ def main(configFile='config.yaml'):
     augment = cfg['training']['augment']
     randomWeightedSampling = cfg['training']['random_weighted_sampling']
 
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder, exist_ok=True)
+
     ##label map
     with open(train_labelmap_file) as labelmap:
         label_map = json.load(labelmap)

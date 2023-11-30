@@ -3,7 +3,8 @@ import argparse
 import pandas as pd
 import os
 import numpy as np
-from sklearn.metrics import confusion_matrix, balanced_accuracy_score, ConfusionMatrixDisplay, roc_auc_score, f1_score
+from sklearn.metrics import confusion_matrix, balanced_accuracy_score, ConfusionMatrixDisplay
+from sklearn.metrics import roc_auc_score, f1_score, recall_score, precision_score, accuracy_score
 import matplotlib.pyplot as plt
 import nibabel as nib
 
@@ -69,6 +70,8 @@ def extractDataset(ID):
         return 'HeartBrain'
     elif 'small' in ID:
         return 'small'
+    elif 'parel' in ID:
+        return 'parelsnoer'
     return None
 
 
@@ -88,10 +91,12 @@ def createMRIexamples(vis_frame_row, output_folder):
     if not os.path.exists(outpath):
         os.makedirs(outpath)
     outfile = os.path.join(outpath, f"true_{vis_frame_row['string_label']}__pred_{vis_frame_row['string_vote']}"
+                                    f"__cert_{vis_frame_row['certainty']}"
                                     f"__orig_{vis_frame_row['dataset']}__{counter}.png")
     while os.path.exists(outfile):
         counter += 1
         outfile = os.path.join(outpath, f"true_{vis_frame_row['string_label']}__pred_{vis_frame_row['string_vote']}"
+                                        f"__cert_{vis_frame_row['certainty']}"
                                         f"__orig_{vis_frame_row['dataset']}__{counter}.png")
     saveNifti(vis_frame_row['imageID'], outfile)
 
@@ -134,12 +139,29 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
     #results by slice basis
     ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'])
     f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro')
+    prec = precision_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro')
+    recall = recall_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'], average='macro')
     auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_score=FullResultFrame[raw_cols], average='macro',
                               multi_class='ovo', labels=NumericalLabels
                               )
-    resultDict['ac_slice'] = ac
-    resultDict['f1_slice'] = f1
-    resultDict['auc_slice'] = auc_score
+    resultDict['ac_slice__balanced'] = ac
+    resultDict['f1_slice__macro'] = f1
+    resultDict['prec_slice__macro'] = prec
+    resultDict['recall_slice__macro'] = recall
+    resultDict['auc_slice__macro'] = auc_score
+    ac = accuracy_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['prediction'])
+    f1 = f1_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['prediction'], average='micro')
+    prec = precision_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['prediction'], average='micro')
+    recall = recall_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['prediction'], average='micro')
+    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'], y_score=FullResultFrame[raw_cols],
+                              average='weighted',
+                              multi_class='ovo', labels=NumericalLabels
+                              )
+    resultDict['ac_slice__'] = ac
+    resultDict['f1_slice__micro'] = f1
+    resultDict['prec_slice__micro'] = prec
+    resultDict['recall_slice__micro'] = recall
+    resultDict['auc_slice__weighted'] = auc_score
     mc = ConfusionMatrixDisplay.from_predictions(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['prediction'],
                         labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
                         include_values=False)   
@@ -150,13 +172,30 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
     #majority vote without certainty
     ac = balanced_accuracy_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'])
     f1 = f1_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro')
+    prec = precision_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro')
+    recall = recall_score(y_true=FullResultFrame['groundTruth'],y_pred=FullResultFrame['vote'], average='macro')
     raw_preds = FullResultFrame[raw_cols].to_numpy()
     auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'],y_score=raw_preds, average='macro',
                               multi_class='ovo', labels=NumericalLabels
                               )
-    resultDict['ac_vote_0'] = ac
-    resultDict['f1_vote_0'] = f1
-    resultDict['auc_vote_0'] = auc_score
+    resultDict['ac_vote_0__balanced'] = ac
+    resultDict['f1_vote_0__macro'] = f1
+    resultDict['prec_vote_0__macro'] = prec
+    resultDict['recall_vote_0__macro'] = recall
+    resultDict['auc_vote_0__macro'] = auc_score
+    ac = accuracy_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'])
+    f1 = f1_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'], average='micro')
+    prec = precision_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'], average='micro')
+    recall = recall_score(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'], average='micro')
+    raw_preds = FullResultFrame[raw_cols].to_numpy()
+    auc_score = roc_auc_score(y_true=FullResultFrame['groundTruth'], y_score=raw_preds, average='weighted',
+                              multi_class='ovo', labels=NumericalLabels
+                              )
+    resultDict['ac_vote_0__'] = ac
+    resultDict['f1_vote_0__micro'] = f1
+    resultDict['prec_vote_0__micro'] = prec
+    resultDict['recall_vote_0__micro'] = recall
+    resultDict['auc_vote_0__weighted'] = auc_score
     mc = ConfusionMatrixDisplay.from_predictions(y_true=FullResultFrame['groundTruth'], y_pred=FullResultFrame['vote'],
                         labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
                         include_values=False)
@@ -181,12 +220,29 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
             ypred = FullResultFrame['vote'][FullResultFrame['certainty']>=certaintyThreshhold]
             ac = balanced_accuracy_score(y_true=ytrue,y_pred=ypred)
             f1 = f1_score(y_true=ytrue,y_pred=ypred, average='macro')
+            prec = precision_score(y_true=ytrue,y_pred=ypred, average='macro')
+            recall = recall_score(y_true=ytrue,y_pred=ypred, average='macro')
             auc_score = roc_auc_score(y_true=ytrue,
                                       y_score=FullResultFrame[raw_cols][FullResultFrame['certainty']>=certaintyThreshhold],
                                       average='macro', multi_class='ovo', labels=NumericalLabels)
-            resultDict[f'ac_vote_{certaintyThreshhold}'] = ac
-            resultDict[f'f1_vote_{certaintyThreshhold}'] = f1
-            resultDict[f'auc_vote_{certaintyThreshhold}'] = auc_score
+            resultDict[f'ac_vote_{certaintyThreshhold}__balanced'] = ac
+            resultDict[f'f1_vote_{certaintyThreshhold}__macro'] = f1
+            resultDict[f'prec_vote_{certaintyThreshhold}__macro'] = prec
+            resultDict[f'recall_vote_{certaintyThreshhold}__macro'] = recall
+            resultDict[f'auc_vote_{certaintyThreshhold}__macro'] = auc_score
+            ac = accuracy_score(y_true=ytrue, y_pred=ypred)
+            f1 = f1_score(y_true=ytrue, y_pred=ypred, average='micro')
+            prec = precision_score(y_true=ytrue, y_pred=ypred, average='micro')
+            recall = recall_score(y_true=ytrue, y_pred=ypred, average='micro')
+            auc_score = roc_auc_score(y_true=ytrue,
+                                    y_score=FullResultFrame[raw_cols][
+                                        FullResultFrame['certainty'] >= certaintyThreshhold],
+                                    average='weighted', multi_class='ovo', labels=NumericalLabels)
+            resultDict[f'ac_vote_{certaintyThreshhold}__'] = ac
+            resultDict[f'f1_vote_{certaintyThreshhold}__micro'] = f1
+            resultDict[f'prec_vote_{certaintyThreshhold}__micro'] = prec
+            resultDict[f'recall_vote_{certaintyThreshhold}__micro'] = recall
+            resultDict[f'auc_vote_{certaintyThreshhold}__micro'] = auc_score
             mc = ConfusionMatrixDisplay.from_predictions(y_true=ytrue, y_pred=ypred,
                         labels=NumericalLabels, normalize='true', cmap='viridis', display_labels=StringLabels,
                         include_values=False)

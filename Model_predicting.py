@@ -65,7 +65,7 @@ def predicting(model, test_loader, device, ResultsFrame, output_folder, model_na
     out_meta_file = os.path.join(output_folder, 'Predictions_' + model_name + 'metaDict.json')
     while os.path.exists(out_file):
         out_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + '.csv')
-        out_meta_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + 'metaDict.json')
+        out_meta_file = os.path.join(output_folder, f'Predictions_copy{fileCounter}_' + model_name + '_metaDict.json')
         fileCounter+=1
         if fileCounter==5:
             print('too many copies copy 5 will be overriden')

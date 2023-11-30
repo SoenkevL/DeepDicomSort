@@ -122,8 +122,10 @@ def main(configFile):
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='This is Model test for the specified config parameters')
     parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+    parser.add_argument('-v','--visualize', action='store_true', help='pass if example images should be visualized')
     args = parser.parse_args()
     configFile = args.configFile
+    visualize = args.visualize
     outfile = main(configFile)
     print('finished testing')
-    MA.main(outfile, testing=True, certainties='[1, 0.8, 0.6]')
+    MA.main(outfile, testing=True, certainties='[1, 0.8, 0.6]', vis=visualize)
