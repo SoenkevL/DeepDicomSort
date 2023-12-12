@@ -9,6 +9,18 @@ import matplotlib.pyplot as plt
 import nibabel as nib
 
 def initialize(outfile):
+    '''
+    uses the outfile path in order to infere the name of the meta_dictionary and use these to load the outputfolder,
+    modelname, loads the result frame and meta_dict
+    inputs:
+    -outfile: filepath of the resultfile that is to be analyzed
+    outputs:
+    -out_file_folder: folder where the result file is
+    -modelname: name of the model which was used for predicting
+    -ResultFrame: the loaded result frome from the out_file
+    -meta_dict: the loaded dictionary from the meta_dict_file
+    -result_dict_file: the file where the results will be stored
+    '''
     print('initializing')
     out_file = outfile
     out_file_folder = out_file.split('/')[:-1]
@@ -23,6 +35,14 @@ def initialize(outfile):
     return out_file_folder, modelname, ResultFrame, meta_dict, result_dict_file
 
 def splitImageID(dataframe):
+    '''
+    uses the imageID in order to find the NIFTI_path, slicenumber and NIFTI name.
+    This is supposed to be used using pandas apply on rows of a datamframe
+    input:
+    -dataframe: dataframe to calculate from. Needs to have 'imageID' as column
+    outputs:
+    -pandas_Series: contains the cols [NIFTI_path, NIFTI_name, slicenumber]
+    '''
     imageID = dataframe['imageID']
     sliceName = imageID.split('/')[-1].split('.nii.gz')[0]
     NIFTI_name = sliceName.split('__s')[0]
@@ -33,6 +53,14 @@ def splitImageID(dataframe):
     return pd.Series([NIFTI_path, NIFTI_name, slicenum], index=['NIFTI_path', 'NIFTI_name', 'slicenum'])
 
 def majorityVote(frame,N_classes):
+    '''
+    calculates the majority vote off predictions in a dataframe assuming there are N_different classes to predict
+    inputs:
+    -frame: dataframe to caclulate predictions from, needs to have 'prediction' column
+    -N_classes: integer of how many classes there are in total to predict
+    outputs:
+    -pandas_Series: contains columns ['vote', 'certainty'] with same row length as the input dataframe
+    '''
     votes = np.zeros(N_classes)
     framelength = len(frame)
     for prediction in frame['prediction']:
@@ -42,12 +70,27 @@ def majorityVote(frame,N_classes):
     return pd.Series({'vote':majorityClass,'certainty':certainty})
 
 def processDataframe(out_file_folder, modelname, ResultFrame, meta_dict):
+    '''
+    Uses the functions splitImageID and majorityVote in order to create the ensemble frame from the predictions frame.
+    inputs:
+    -out_file_folder: folder where the original ouput file is stored
+    -modelname: name of the model used for the predictions
+    -ResultFrame: Frame containing the predictions of the model
+    -meta_dict: dictionary containing informations about the training and testing process aswell as the classes
+    outputs:
+    FullResultFrame: original Result frame with the extra columns from splitImageID and majorityVote
+    NumSlicesPerClass: returns how many slices per scan were used in the dataframe
+    '''
+    #extract the name, path and slicenum and add them to the original frame
     extraFrame = ResultFrame.apply(splitImageID, axis=1)
     ResultFrame = ResultFrame.merge(extraFrame, how='left', left_index=True, right_index=True, validate='one_to_one')
+    #extract how many slices are used per scan
     NumSlicesPerClass=ResultFrame['slicenum'].nunique()
     ResultFrame = ResultFrame.set_index(['NIFTI_name'],drop=True)
+    #load the labelmap to figure out how many classes there are
     labelmap = meta_dict['labelmap']
     N_classes = len(labelmap)
+    #for each NIFTI_name (means one scan) it applies the majority vote
     VotingFrame = ResultFrame[['prediction']].groupby('NIFTI_name').apply(majorityVote,N_classes)
     FullResultFrame = ResultFrame.merge(VotingFrame,how='left',on='NIFTI_name')
     FullResultFrame = FullResultFrame.set_index('slicenum',append=True).sort_index()
@@ -56,6 +99,13 @@ def processDataframe(out_file_folder, modelname, ResultFrame, meta_dict):
 
 
 def extractDataset(ID):
+    '''
+    extracts the dataset from the ID, is hard coded and needs to be adapted to the datasets used
+    inputs:
+    -ID: imageID from the dataframe
+    outputs:
+    -dataset: returns a name from the list of it is part of the ID
+    '''
     if 'ADNI2' in ID:
         return 'ADNI2'
     elif 'ADNI3' in ID:
@@ -78,6 +128,12 @@ def extractDataset(ID):
 
 
 def saveNifti(img_path, outfile):
+    '''
+    saves a nifti image
+    inputs:
+    -img_path: path where the nifti is stored
+    -outfile: path where the image is stored
+    '''
     fig, ax = plt.subplots()
     nimg = nib.load(img_path)
     data = nimg.get_fdata()
@@ -88,6 +144,13 @@ def saveNifti(img_path, outfile):
 
 
 def createMRIexamples(vis_frame_row, output_folder):
+    '''
+    uses rows from a dataframe in order to create an example image with saveNifti.
+    Should be using pandas apply along the row axis of a dataframe.
+    inputs:
+    -vis_frame_row: row from the dataframe that is to be visualized
+    -output_folder: folder where images are stored
+    '''
     outpath = os.path.join(output_folder, vis_frame_row['string_label'], vis_frame_row['dataset'])
     counter = 0
     if not os.path.exists(outpath):
@@ -104,22 +167,38 @@ def createMRIexamples(vis_frame_row, output_folder):
 
 
 def visualize_examples(out_file_folder, full_result_frame, meta_dict):
+    '''
+    creates a datafrane from the full result frame in order to visualize certain examples from it. These are picked
+    in order to represent different predictions and misspredictions of the different classes in a strategic manner.
+    inputs:
+    -out_file_folder: folder where the images and visualize frame are stored
+    -full_result_frame: the ensemble frame which allready needs to have vote and certainty cols
+    -meta_dict: meta dictionary with info about the training and testing process (used for labels)
+    '''
+    #create a list of the labels
     label_name_list = list(meta_dict['labelmap'].keys())
     df = full_result_frame.copy()
+    #create string labels for the classes and extract which dataset they belong to
     df['string_label'] = df['groundTruth'].apply(lambda x: label_name_list[x])
     df['dataset'] = df['imageID'].apply(extractDataset)
     labels = df['string_label'].unique()
+    #extract the center slide for each image (slide 12 in this case)
     df['center_slide'] = df['imageID'].apply(lambda x: '__s12' in x)
+    #add column that checks if the prediction is true or not
     df['correctPrediction'] = df['vote'] == df['groundTruth']
     df['string_vote'] = df['vote'].apply(lambda x: label_name_list[int(x)])
+    #only keep the center slides for all scans
     VisualizeFrame = df[df['center_slide']]
     from sklearn.model_selection import train_test_split
     visualize_frame = pd.DataFrame()
+    #go through all labels
     for label in labels:
         temp1 = VisualizeFrame[VisualizeFrame['string_label']==label]
         datasets = temp1['dataset'].unique()
+        #for each dataset in a label
         for dataset in datasets:
             df = temp1[temp1['dataset']==dataset]
+            #create a split of the images of size 10 which represent correctly and incorrectly classifed labels
             try:
                 visualize, _ = train_test_split(df, train_size=10, shuffle=True, random_state=42, stratify=df['correctPrediction'])
             except ValueError:
@@ -127,12 +206,29 @@ def visualize_examples(out_file_folder, full_result_frame, meta_dict):
             visualize_frame = pd.concat([visualize_frame,visualize], axis=0)
     if not os.path.exists(f'{out_file_folder}/example_images'):
         os.makedirs(f'{out_file_folder}/example_images')
+    #save the frame of the images that where visualized
     visualize_frame.to_csv(f'{out_file_folder}/example_images/vis_frame.csv')
+    #to each row apply the createMRIexamples function to save an image with descriptive file path
     visualize_frame.apply(createMRIexamples, output_folder=f'{out_file_folder}/example_images', axis=1)
 
 
 
 def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_dict, result_dict_file, certainties=[]):
+    '''
+    Creates metrics for the enesemble Frame. The metrics are calculated on a per slice basis as well as per vote basis.
+    Additonally using the certainties different thresholds can be set to caclulate metrics for.
+    The calculated metrics are ac, balanced ac, f1*, prec*, recall*, roc_auc_score, weighted roc_auc_score
+    The metrics with * are calculated using micro and macro weight
+    All metrics and figures will be saved to additonal files in the original result file folder
+    inputs:
+    -FullResultFrame: the ensemble Frame containg vote, certainties etc
+    -out_file: where the original results were stored to infere where the figs are saved
+    -NumSlicesPerClass: how many slices per class are used
+    -modelname: Name of the model that was used for predicting
+    -meta_dict: meta dictionary to infere the label names
+    -result_dict_file: file where the result dictionary is stored
+    -certainties: the certainties for which to calc metrics
+    '''
     StringLabels = list(meta_dict['labelmap'].keys())
     NumericalLabels = list(meta_dict['labelmap'].values())
     resultDict = {}
@@ -257,19 +353,32 @@ def createMetrics(FullResultFrame, out_file, NumSlicesPerClass, modelname, meta_
 
 
 def main(outfile, testing=False,certainties=[], vis=False):
+    '''
+    main function of the analysis
+    inputs:
+    -outfile: the file containing the predicitons from the model
+    -testing: this calculates metrics, needs to have groundtruth labels in order to be activated
+    -certainties: certainties for metrics calculations, see createMetrics
+    -vis: If examples should be visualized (currently also needs ground truth but could be adapted)
+    '''
+    #intialize using the outfile to infere other information
     out_file_folder, modelname, ResultFrame_initial, meta_dict, result_dict_file = initialize(outfile)
+    #process the result frame, this can be done with or without groundTruth in order to calc things like majority votes
     ResultFrame_processed, nslices = processDataframe(out_file_folder, modelname, ResultFrame_initial, meta_dict)
     if testing:
+        # when testing is set create metrics
         createMetrics(
             ResultFrame_processed, outfile, NumSlicesPerClass=nslices, modelname=modelname,
             meta_dict=meta_dict, certainties=certainties, result_dict_file=result_dict_file
         )
     if vis:
+        #if vis is set creates visualized examples of different predictions for labels and datasets
         visualize_examples(out_file_folder, ResultFrame_processed, meta_dict)
 
 
 
 if __name__=='__main__':
+    #load the comand line arguments from argparse
     parser = argparse.ArgumentParser(description='This is the analysis of the results created in the model testing/prediction')
     parser.add_argument('-o','--outfile', action='store',metavar='o', help='pass here the filepath that was created by ModelTesting/predicting')
     parser.add_argument('-t','--testing',action='store_true', help='Pass this flag if testing should be done instead of only predictiong \n if testing results like accuracy and confusion matrices should be computed')
@@ -280,6 +389,7 @@ if __name__=='__main__':
     testing = args.testing
     certainties = args.certainties
     visualize = args.visualize
+    #call the main function to analyse the results
     main(out_file, testing, certainties, visualize)
     print('finished analysing results')
 
