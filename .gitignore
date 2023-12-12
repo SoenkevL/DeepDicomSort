@@ -110,7 +110,6 @@ config_BRATS.yaml
 .training_old
 .training
 .csv
-*.yaml
 .testing_old
 .testing
 Pytorch_monai/secrets.py

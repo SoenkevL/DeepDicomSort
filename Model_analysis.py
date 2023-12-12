@@ -72,6 +72,8 @@ def extractDataset(ID):
         return 'small'
     elif 'parel' in ID:
         return 'parelsnoer'
+    elif 'ACE' in ID:
+        return 'ace'
     return None
 
 

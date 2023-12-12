@@ -6,7 +6,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="data" />
     <orderEntry type="module" module-name="data_small" />
-    <orderEntry type="module" module-name="prototyping" />
     <orderEntry type="module" module-name="ResultsFromServer" />
   </component>
   <component name="PyDocumentationSettings">

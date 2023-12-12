@@ -55,8 +55,13 @@ def sort_DICOM_to_structured_folders(root_dir, df_path, move_files=False):
                     if move_files:
                         shutil.move(full_file_path, dicom_output_folder)
                     else:
-                        shutil.copy(full_file_path, dicom_output_folder)
-                    outputFolders.append(dicom_output_folder)
+                        try: 
+                            shutil.copy(full_file_path, dicom_output_folder)
+                            outputFolders.append(dicom_output_folder)
+                        except shutil.SameFileError:
+                            outputFolders.append(dicom_output_folder)
+                        except: 
+                            pass
                 except:
                     pass
             for struct_folder in set(outputFolders):
@@ -136,7 +141,12 @@ def split_in_series(root_dir, df_path):
 
                 for i_dicom, index_type in zip(files, reverse_indices):
                     new_scan_dir = os.path.join(upper_folder, scan_name + '_Scan_' + str(i_sets[index_type]))
-                    shutil.move(os.path.join(root, i_dicom), new_scan_dir)
+                    try:
+                        shutil.move(os.path.join(root, i_dicom), new_scan_dir)
+                    except shutil.Error:
+                        print(f'split in series: destination {new_scan_dir} allready exists')
+                    except:
+                        pass
                 shutil.rmtree(root)
     if splitedSeries:
         df = pd.read_csv(df_path)
