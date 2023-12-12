@@ -12,6 +12,16 @@ import Model_analysis as MA
 
 
 def createMetaInfoDict(modelFile, test_label_file, train_label_file, labelmap):
+    '''
+    creates a dictionary with info about the training and testing process
+    inputs:
+    -modelFile: the file where the model is stored
+    -predictionFolder: the folder that was used predicted
+    -train_label_file: The file the model was trained with
+    -labelmap: maps the string labels to the numerical ones and defines which output classes the model has
+    outputs
+    -dictionary
+    '''
     return {
         'model': os.path.basename(modelFile),
         'train_file': train_label_file,
@@ -20,6 +30,16 @@ def createMetaInfoDict(modelFile, test_label_file, train_label_file, labelmap):
     }
 
 def load_data(test_label_file, labelmap):
+    '''
+    load the data from the test label file into a dataloader the model can use for predicting.
+    The test label file needs to include ground truth labels
+    inputs:
+    -test_label_file: file with path to nifti files and ground truths
+    label_map: the labelmap of the used model
+    outputs:
+    -ResultsFrame: empty dataframe with the correct columns according to labelmap
+    -test loader: a monai dataloader with the files to predict and transforms applied
+    '''
     test_image_IDs, test_image_labels, _, extra_inputs = Utils.load_labels(test_label_file,nb_classes=len(labelmap) )
 
     testTransforms = monai.transforms.Compose(
@@ -45,7 +65,18 @@ def load_data(test_label_file, labelmap):
 
 def testing(model, test_loader, device, ResultsFrame, output_folder, model_name, meta_dict):
     '''
-    creates a dataframe which stores the results of the model
+    main functionality where the model is used to predict each file with raw labels and a numerical prediction
+    This function is dependent on having a ground truth label
+    inputs:
+    -model: model for predicting
+    -test_loader: monai dataloader with the samples to be predicted
+    -device: which device the model should run on
+    -ResultsFrame: dataframe where results are stored
+    -output_folder: folder where results should be stored
+    -model_name: name of the model used for predicting
+    -meta_dict: dictionary with information of the training process
+    outputs:
+    -out_file: path to the csv where the predictions are stored
     '''
     for datapoint in tqdm(test_loader):
         image = datapoint['image'].float().to(device=device)
@@ -84,6 +115,14 @@ def testing(model, test_loader, device, ResultsFrame, output_folder, model_name,
 
 
 def main(configFile):
+    '''
+    main function for the Model_testing file. Using the config it loads all necessary information for testing
+    inputs:
+    -configFile: configFile to predict
+    outputs:
+    -out_file: filepath to the prediction csv
+    '''
+    #load the information from the config file
     with open(configFile, 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
     train_label_file = cfg['training']['train_label_file']
@@ -94,26 +133,31 @@ def main(configFile):
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder, exist_ok=True)
-        
+
+    #load the labelmap file
     with open(label_map_file) as Lmap:
         label_map = json.load(Lmap)
 
     label_map = dict(label_map)
     print(len(label_map))
+    #create the meta info dict
     metaDict = createMetaInfoDict(modelFile=model_file, test_label_file=test_label_file, train_label_file=train_label_file, labelmap=label_map)
 
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
-
+    #initialize the model on the correct device
     gpu = Utils.chooseDevice(verbose=True)
     model = torch.load(f=model_file,map_location=gpu)
     model = model.to(device=gpu)
     model.eval()
 
+    #determine the model name
     model_name = os.path.basename(os.path.normpath(model_file)).split('.pt')[0]
 
+    #load the test image paths from the test label file and the labelmap for determining the number of classes
     ResultsFrame_empty, test_loader = load_data(test_label_file, label_map)
 
+    #run the testing
     out_file = testing(model,test_loader,gpu,ResultsFrame_empty,output_folder,model_name,meta_dict=metaDict)
     return out_file
     

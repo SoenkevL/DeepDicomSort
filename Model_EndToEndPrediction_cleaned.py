@@ -4,7 +4,12 @@ import Preprocessing_cleaned.preprocessing_pipeline_monai as prep_pipe
 import time
 import argparse
 from Pytorch_monai.Utils import  protectConfig
-
+'''
+This file is used as a script to run
+-preprocessing
+-predicting
+-analysing
+'''
 parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder depening on what is specified in the config.yaml file.')
 parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
 args = parser.parse_args()
