@@ -14,9 +14,20 @@ import argparse
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import random
-import matplotlib.pyplot as plt
 
 def choosetransform(augment=False, slice_scaling=False, device='cpu'):
+    '''
+    this function is used in order to choose the according transform based on the parameters the user sets
+    in the training section of the config.
+    inputs:
+    -augment: If augmentation should be done in the transform
+    -slice_scaling: if normalization should be done on a per slice basis, if false its done on per volume basis in the
+                    preprocessing
+    -device: the device that will be used for training the model, either cpu or a cuda device for gpu training
+    outputs:
+    -trainTransforms: a monai transforms compose object with the according transformations for the training samples
+    -valTransform: a monai transforms compose object with the according transformations for the calidation samples
+    '''
     if slice_scaling:
         if augment:
             trainTransforms = monai.transforms.Compose(
@@ -93,6 +104,11 @@ def choosetransform(augment=False, slice_scaling=False, device='cpu'):
 def freezeConvLayers(model, verbose=False):
     '''
     freezes all layers which contain 'conv' in their name
+    inputs:
+    -model: the torch model where the layers should be frozen
+    -verbose: If true the layers which are frozen are printed to the logs
+    outputs:
+    -model: model with frozen conv layers
     '''
     for name, para in model.named_parameters():
         if 'conv' in name:
@@ -105,7 +121,12 @@ def freezeConvLayers(model, verbose=False):
 
 def ensureUnfrozenLayers(model, verbose=False):
     '''
-    makes sure all layers of the model are unfroozen
+    makes sure all layers of the model are unfroozen. Basically the opposite of freezeConvLayers.
+    inputs:
+    -model: the torch model where the layers should be unfrozen
+    -verbose: If true the layers which are unfrozen are printed to the logs
+    outputs:
+    -model: model with unfrozen conv layers
     '''
     for name, para in model.named_parameters():
         if para.requires_grad:
@@ -118,12 +139,18 @@ def ensureUnfrozenLayers(model, verbose=False):
 
 def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None, freeze_conv=False, sliceScaling=False):
     '''
-    Loads the model with transfer weights if they are given and puts it into the specified device
-    Also initializes and returns the optimier, loss function and lr_scheduler
-    N_train_classes: How many output classes should the model have
-    device: device to run the training on
-    initWeights: state dict or model in pytorch standard to load weights for transfer learning
-    freeez_conv: if the concolution layers of the transfer weights should be frozen
+    Loads the model with transfer weights if they are given and initializes it onto the specified device.
+    Additionally, initializes and returns the optimizer, loss function and lr_scheduler.
+    inputs:
+    -N_train_classes: How many output classes should the model have
+    -device: device to run the training on
+    -initWeights: state dict or model in pytorch standard to load weights for transfer learning
+    -freeez_conv: if the concolution layers of the model should be frozen
+    outputs:
+    -model: model for training
+    -optimizer: Adam optimizer for sgd
+    -loss_function: cross entropy loss
+    -rop: learning rate scheduler
     '''
     if initWeights:
         model = Utils.updateModelDictForTransferLearning(
@@ -149,8 +176,33 @@ def prepareModelAndCallbacks(N_train_classes,device='cpu',initWeights=None, free
 def prepareData(
         train_label_file, batch_size,N_train_classes, crv, crt,
         augment=False, randomWeightedSampling=False, per_slice_normalization=False ,device='cpu'):
+    '''
+    This function makes sure that the data is loaded correctly and the transformations are applied. It uses monais
+    CacheDataset in order to optimize the efficiency of the data loading. It utalizes multiprocessing with different
+    workers in order to speed up the data loading process. Make sure that there are enough cpu cores available for
+    that or reduce the number of workers used. If there are errors in this function workers are likely the casue for
+    that. Makes a call to chooseTransforms.
+    inputs:
+    -train_label_file: The file that contains the filepaths and labels for the training samples
+    -batch_size: batch_size used in model trianing, is set in the dataloader
+    -N_train_classes: The number of output classes that the model should have
+    -crv: cache ratio validation. Sets the cache ratio for the validation Cache dataset
+    -crt: cache ration train. Sets the ratio for the training cache dataset.
+          --There is also a hard limit of 40k samples set in the code. More info in monais documentation--
+    -randomWeightedSampling: If true minority classes are oversampled using the random weighted sampling technique
+    -augment: If augmentation should be done in the transform
+    -slice_scaling: if normalization should be done on a per slice basis, if false its done on per volume basis in the
+                    preprocessing
+    -device: the device that will be used for training the model, either cpu or a cuda device for gpu training
+    outputs:
+    -train_loader: monai dataloader for the trainging samples
+    -val_loader: moani dataloader for the validation samples
+    -train_transforms: monai transform compose obect with the train transformation
+    -val_transforms: monai transform compose object with the validation transformations
+    '''
     # load imagefilenames and onehot encoded labels
-    train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(train_label_file,nb_classes=N_train_classes)
+    train_image_IDs, train_image_labels, N_train_classes, extra_inputs = Utils.load_labels(
+                                                                            train_label_file,nb_classes=N_train_classes)
     print("Detected %d classes in training data" % N_train_classes)
 
     #initialize monai transforms
@@ -159,7 +211,8 @@ def prepareData(
     #create data dicitionaries
     train_image_labels_noh = np.argmax(train_image_labels,axis=1)
     train_data_dict = [{"image":image_name,"label":label} for image_name, label in zip(train_image_IDs,train_image_labels)]
-    train_data_dict, val_data_dict = train_test_split(train_data_dict,stratify=train_image_labels_noh,shuffle=True,random_state=42,test_size=0.1)
+    train_data_dict, val_data_dict = train_test_split(train_data_dict,stratify=train_image_labels_noh,
+                                                      shuffle=True,random_state=42,test_size=0.1)
 
     # do some checks on the label distribution
     trainLabelList = [np.argmax(dictItem['label']) for dictItem in train_data_dict]
@@ -193,16 +246,42 @@ def train(
         model, loss_function, train_dataloader, val_dataloader, optimizer, rop,
         epochs, model_name, output_folder, visualize=0.1, device='cpu', val_freq=1
     ):
+    '''
+    This is the main training loop for the pytorch model training process. It saves the model with the best validation
+    loss. The path where it is saved is returned by the function and depends on model_name and output_folder.
+    inputs:
+    -model: model that is trained
+    -loss_function: loss function used during training
+    -optimizer: optimizer used during training
+    -rop: learning rate scheduler used during training
+    -epochs: how many epochs the model should train max. Early stopping based on val acc is also utalized in training.
+    -train_dataloader: monai dataloader with the training samples
+    -val_dataloader: monai dataloader with the validation samples
+    -model_name: name the model is saved with. '.pt' will automatically be appended later.
+    -output_folder: folder where the model should be saved
+    -device: device the model is trained on. Either cpu or a cuda device for gpu training
+    -val_freq: how often the model should be validated using the validation samples. A freq of 1 means every epoch.
+                A freq of 2 would be every second epoch and so on.
+    outputs:
+    -train_loss: array over the train loss during epochs
+    -val_loss: array over the validation loss during training
+    -bestModelPath: path where the model is saved after training. The best model regarding val loss is saved.
+    '''
     print('\n\n------------------start training------------------------------\n\n')
+    #initialie the train and val loss
     train_loss = []
     val_loss = []
     best_val_loss = 1000
+    bestModelPath = ''
 
+    #start training loop with maximum epochs
     for epoch in tqdm(range(epochs)):
+        #set training mode
         model.train()
         steps = 0
         epoch_loss = 0
 
+        #go through all batches in the train_dataloader
         for i, batch in enumerate(train_dataloader):
             optimizer.zero_grad()
             images = batch['image'].float().to(device)
@@ -214,13 +293,16 @@ def train(
             optimizer.step()
             steps += 1
 
+        #after running through all batches append the average training loss over all steps
         train_loss.append(epoch_loss/steps)
-        rop.step(train_loss[-1]) #learning rate scheduler
+        #learning rate scheduler
+        rop.step(train_loss[-1])
         #implement early stopping
         if len(train_loss) > 6:
             train_loss_diff = np.abs(train_loss[-6])-np.abs(np.min(train_loss[-5:]))
             if train_loss_diff < 0.0001:
-                print(f'finished training early with final training loss of {train_loss[-1]} and a loss difference of {train_loss_diff}')
+                print(f'finished training early with final training loss of {train_loss[-1]} and a loss difference'
+                      f' of {train_loss_diff}')
                 return train_loss, val_loss, bestModelPath
         #end of early stopping
 
@@ -237,7 +319,7 @@ def train(
                 val_epoch_loss += loss.item()
                 steps += 1
             val_loss.append(val_epoch_loss/steps)
-            #implement best model saving
+            #implement best model saving based on val loss
             if val_loss[-1] < best_val_loss:
                 best_val_loss = val_loss[-1]
                 bestModel = model
@@ -252,6 +334,19 @@ def train(
 
 
 def main(configFile='config.yaml'):
+    '''
+    main function of the Model_training.py file. Loads the data, initializes and trains the model. By default it logs
+    the model trianing using wandb which requires a wandb api key. This one should be saved in a file and imported
+    as wandbkey.
+    If no such key is available all logging would need to be commented out in this function and the training loop.
+    inputs:
+    -configFile: the config.yaml file which contains the information for training.
+    outputs:
+    trainloss: array containing the training loss
+    valloss: array containing the validation loss
+    modelPath: Path where the model is saved after training
+    '''
+    # for reproducibility seeds are set for all random functions
     monai.utils.set_determinism(seed=42)
     torch.manual_seed(42)
     random.seed(42)
@@ -331,13 +426,14 @@ def main(configFile='config.yaml'):
 
 
 if __name__=='__main__':
-    #set determinism
     parser = argparse.ArgumentParser(description='This is Model training for the specified config parameters')
-    parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+    parser.add_argument('-c','--configFile', action='store', help='pass here the config file path'
+                        ' (from root or absolute) that should be used with your program')
     args = parser.parse_args()
     configFile = args.configFile
     trainloss, valloss, modelPath = main(configFile)
-    print(f'finished model training and saved best Model to: {modelPath} \n with min training loss of {np.min(trainloss)} and min val loss of {np.min(valloss)}')
+    print(f'finished model training and saved best Model to: {modelPath} \n with min training loss of'
+          f' {np.min(trainloss)} and min val loss of {np.min(valloss)}')
 
 
 

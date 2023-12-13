@@ -380,7 +380,7 @@ def main(outfile, testing=False,certainties=[], vis=False):
 if __name__=='__main__':
     #load the comand line arguments from argparse
     parser = argparse.ArgumentParser(description='This is the analysis of the results created in the model testing/prediction')
-    parser.add_argument('-o','--outfile', action='store',metavar='o', help='pass here the filepath that was created by ModelTesting/predicting')
+    parser.add_argument('-o','--outfile', action='store',metavar='o', required=True, help='pass here the filepath that was created by ModelTesting/predicting')
     parser.add_argument('-t','--testing',action='store_true', help='Pass this flag if testing should be done instead of only predictiong \n if testing results like accuracy and confusion matrices should be computed')
     parser.add_argument('-v', '--visualize', action='store_true', help='visualize examples of correclty and misspredicted classes')
     parser.add_argument('--certainties',action='store',metavar='cert', default=[], help='specify a comma septerated string of certainties that should be used for the testing has to be in [0,1]. This needs to have the -t flag to be set')

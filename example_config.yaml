@@ -1,6 +1,6 @@
 #to avoid unnecessary errors please provide absolute filepaths
 preprocessing:
-  root_dicom_folder: /filepath/to/root/dicomFolder #mandatory for preprocessing, should always be provided
+  root_dicom_folder: #/filepath/to/root/dicomFolder #mandatory for preprocessing, should always be provided
 
 data_preparation:
   image_size_x: 256
@@ -8,28 +8,28 @@ data_preparation:
   image_size_z: 25
 
 model:
-  label_map_file: /filepath/to/labelmap #mandatory when training or testing, not needed for preprocessing
-  model_file: /filepath/to/model.pt #mandatory when testing, automatically created when training and not needed for preprocessing
+  label_map_file: #/filepath/to/labelmap #mandatory when training or testing, not needed for preprocessing
+  model_file: #/filepath/to/model.pt #mandatory when testing, automatically created when training and not needed for preprocessing
 
 network:
   batch_size: 32
   nb_epoch: 20
 
 testing:
-  output_folder: /filepath/where/results/are/stored #mandatory when testing
-  test_label_file: /filepath/to/testlabes #mandatory when testing
+  output_folder: #/filepath/where/results/are/stored #mandatory when testing
+  test_label_file: #/filepath/to/testlabes #mandatory when testing
 
 post_processing:
-  output_folder: /filepath/where/results/are/stored #when using full inference pipeline this will be set automatically
-  prediction_folder: /filepath/where/nifti_slices/are  #when using full inference pipeline this will be set automatically
+  output_folder: #/filepath/where/results/are/stored #when using full inference pipeline this will be set automatically
+  prediction_folder: #/filepath/where/nifti_slices/are  #when using full inference pipeline this will be set automatically
 
 training: #all default values can be changed according to users needs and preferences
   augment: false
   cache_rate_train: 0.1  #has hard max of 40k datapoints, can be changed in model_training.py
   cache_rate_val: 0.25 #has hard max of 40k datapoints, can be changed in model_training.py
   freeze: true
-  output_folder: /filepath/where/model/is/stored #mandatory when training
+  output_folder: #/filepath/where/model/is/stored #mandatory when training
   per_slice_normalization: true
   random_weighted_sampling: true
-  train_label_file: /filepath/to/trainlabels #mandatory when training
-  transfer_weights_path: /filepath/to/transfer/weights #optional, needs to be provided for transfer training
+  train_label_file: #/filepath/to/trainlabels #mandatory when training
+  transfer_weights_path: #/filepath/to/transfer/weights #optional, needs to be provided for transfer training

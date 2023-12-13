@@ -158,7 +158,7 @@ def main(configFile):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='This is Model prediction for the specified config parameters')
-    parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+    parser.add_argument('-c','--configFile', action='store',required=True, help='pass here the config file path (from root or absolute) that should be used with your program')
     args = parser.parse_args()
     configFile = args.configFile
     main(configFile)

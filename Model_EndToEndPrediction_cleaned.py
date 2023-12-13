@@ -11,7 +11,7 @@ This file is used as a script to run
 -analysing
 '''
 parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder depening on what is specified in the config.yaml file.')
-parser.add_argument('-c','--configFile', action='store',metavar='c', help='pass here the config file path (from root or absolute) that should be used with your program')
+parser.add_argument('-c','--configFile', action='store', required=True, help='pass here the config file path (from root or absolute) that should be used with your program')
 args = parser.parse_args()
 start_time = time.time()
 config = protectConfig(args.configFile)

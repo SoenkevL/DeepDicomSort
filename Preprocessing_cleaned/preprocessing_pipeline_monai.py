@@ -158,7 +158,7 @@ def nifti_processing(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='This is the preprocessing pipeline for a data or nifti folder \
                                                 depening on what is specified in the config.yaml file.')
-    parser.add_argument('-c', '--configFile', action='store', metavar='c', required=True,
+    parser.add_argument('-c', '--configFile', action='store', required=True,
                         help='pass here the config file path (from root or absolute) \
                             that should be used with your program')
     parser.add_argument('-m', '--mode', action='store', required=True,

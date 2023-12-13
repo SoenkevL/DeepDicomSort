@@ -1,88 +1,68 @@
-# DeepDicomSort
+# DeepDicomSort for Brain MRI
 
-DeepDicomSort can recognize different scan types (pre-contrast T1-weighted, post-contrast T1-weighted, T2-weighted, Proton Density-weighted, T2w-FLAIR-weighted, diffusion weighted imaging, perfusion weighted DSC and derived imaging) of brain tumor scans.
+## origin
+DeepDicomSort was originally created by van der Voort et all to recognize different MRI scan types (pre-contrast T1-weighted, post-contrast T1-weighted, T2-weighted, Proton Density-weighted, T2w-FLAIR-weighted, diffusion weighted imaging, perfusion weighted DSC and derived imaging) of brain tumor scans.
 It does this using a CNN.
 
 For more information, see the paper: https://doi.org/10.1007/s12021-020-09475-7
 
 If you use DeepDicomSort in your work, please cite the following: van der Voort, S.R., Smits, M., Klein, S. et al. DeepDicomSort: An Automatic Sorting Algorithm for Brain Magnetic Resonance Imaging Data. Neuroinform 19, 159–184 (2021). https://doi.org/10.1007/s12021-020-09475-7
 
+## adaptation
+During his Internship Project Soenke van Loh adapted and retrained the DDS network in order to be able to recognize more different MRI scantypes and make it more applicable to clinical data.
+DDS for Brain MRI comes with two different models, one with 16 different classes and one with eight different classes.
 
+Model 1 (no binning):
+T1,T1_c,T2,T2-FLAIR,PD,SWI,GRE,T2*,DWI,ADC,BOLD,angio,PWI,ASL,DTI,Other
 
-If you want to use a docker image please see the end of this section.
-If you want to install manually please continue reading.
+Model 2 (alternative binning):
+diffusion,perfusion,suscept,T1,T1_c,T2,T2-FLAIR,PD,Other
 
-
+The Other class includes different scantypes like fieldmaps, localizers or phase scans.
 ## Set-up
 DeepDicomSort requires the following:
-- Python 3.6.7
-- dcm2niix (https://github.com/rordenlab/dcm2niix), version v1.0.20190410 was used.
-- fsl 5.0 (https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation)
+- Python 3.9.5
 
-After install python 3.6.7, install the required packages:
+After installing python 3.9.5, install the required packages:
 `pip install -r requirements.txt`
 
-The location of the dcm2niix bin and fsl5.0-fslreorient2std bin can be set in the config.yaml file.
+## Running DeepDicomSort for Brain MRI
 
-### Using python 3.7.x
+There are multiple ways DeepDicomSort for Brain MRI can be used. The most important parameters are set using a config file.
+An example config file is provided. I advise to copy it and adapt it for the usecases. Additional parameters can or need to be set 
+in the command line when running a file. Use the -h option when in doubt about which are needed or what they mean.
 
-DeepDicomSort can also run using Python 3.7.x, although this is not the original python version that DeepDicomSort was designed in.
+### prediction from dicom data
+The dataset needs to be in one root folder where all dicom data is in one folder. This folder can contain sub folders.
+In the config.yaml file all parameters in the preprocessing and model section need to be set by the user.
+Preprocessing of the data is automatically done in the pipeline.
+Then the network can be run using `python3 Model_EndToEndPrediction_cleaned.py -c 'config.yaml'`
 
-If you want to use Python 3.7.x you need to use a different requirements file as tensorflow version 1.12.X is not available in Python 3.7.x. To install the correct requirements:
+### preprocessing data
+For preprocessing of data all files are in the Preprocessing_cleaned folder. Different steps of the preprocessing
+can be run using the according arguments in combination with the `preprocessing_pipeline_monai.py` file
+The full pipleine applies the follwing steps to the raw dicom data:
 
-`pip install -r requirements_python37.txt`
+Sorting to structured folder, splitting in series, converting to nifti, creating individual slices per scan
 
-## Running DeepDicomSort
+A csv is created which documents the according file path after sorting, splitting and converting to nifti aswell as if the data was successfully split.
 
-Before running DeepDicomSort pre-processing of the data is required.
-Set the root folder containg the DICOM folders to be organized in the config.yaml file.
-After this, go to the preprocessing folder and run `python3 preprocessing_pipeline.py`, this will then perform all the necessary steps.
+### (transfer) training a new model
+If annotated data is present in a tab seperated txt file where each row is one nifti slice in the first column and 
+the numeric label in the second column then a new model can be trained or one of the base modesl can be tuned.
+For this also all parameters in the training section need to be set. For transfer training from a previous model that
+model can be set in the transfer weights part. Be cautious that the model needs to have the same number of output classes
+or the lasy layers need to be manually removed. Meaning it is aso possible to only give the convolution layers of a model.
+The dimensions for every layer that is transfered from need to match the base model.
 
-Once the pre-processing is done, the config.yaml file can be updated with the label file that has been produced (in the DICOM root folder, under a directory called 'DATA'). If you just want to run DeepDicomSort to make a prediction, only the testing settings need to be updated.
-After updating the testing settings, one can then run `python3 predict_from_CNN.py` which will produce a file with the predicted class for each scan.
-The label corresponding to each scan type is shown in the table below. The leftmost column is the label as predicted directly by the CNN if you use the CNN directly. The second column is the label as is provided in the predictions file, where +1 has been added to each label to make them range from 1 up to and including 8.
-
-| Label prediction by CNN  | Label in prediction file | Scan type |
-| ------------- | -------------  | ------------- |
-| 0  | 1 | pre-contrast T1-weighted  |
-| 1  | 2 | post-contrast T1-weighted  |
-| 2  | 3 | T2 weighted |
-| 3  | 4 | Proton density weighted |
-| 4  | 5 | T2 weighted-FLAIR |
-| 5  | 6 | Diffusion weighted imaging |
-| 6  | 7 | Derived imaging |
-| 7  | 8 | Perfusion weighted-DSC|
-
-Once testing is the done, in the config the file with the predicted labels can be specified.
-The dataset can then be automatically sorted using either `Sort_to_BIDS.py`, which will sort the dataset into the [BIDS format](https://bids.neuroimaging.io/) (and thus will only sort the NIFTI files), or `Rename_folders_from_predictions.py`, which will sort the whole DICOM dataset.
-
-When sorting to BIDS format derived images and perfusion weighted images are not sort, as they are not supported by BIDS.
-`Rename_folders_from_predictions.py` uses a structure used internally at our institute, but it can also be used as an inspiration for your own structure.
-
-
-## Running using docker
-
-If you do not want to set up things manually you can use a docker that comes with all the required dependencies pre-installed.
-Running DeepDicomSort using docker is easy and requires only two setup steps:
-
-### Getting the DeepDicomSort docker
-The DeepDicomSort docker can be obtained from dockerhub using the following command: `docker pull svdvoort/dds:1.0.0`.
-
-### Preparing data
-To prepare the data for the docker first create a root directory, for example `/home/user/deepdicomsort`.
-In this root directory you need to create on directory called `DICOM` (so in this example `/home/user/deepdicomsort/DICOM`), in which you put all DICOM data to be sorted.
-You also need to create an output folder, which you can name whatever you want, for example `/home/user/deepdicomsort/out`.
-
-You are now done with the setup, and are ready to run the docker
-
-### Running the DeepDicomSort docker
-
-Running the docker is done using one simple command:
-
-`docker run -u $UID:$GROUPS -v "<root_folder>:/input/" -v "<output_folder>:/output/" svdvoort/dds:1.0.0`
-
-Where `<root_folder>` is the root folder you created before, and `<output_folder>` is the output folder you created.
-So using the example from above the command would be:
-
-`docker run -u $UID:$GROUPS -v "/home/user/deepdicomsort/:/input/" -v "/home/user/deepdicomsort/out/:/output/" svdvoort/dds:1.0.0`
+### overview of the different python files
+All files besides Model_analysis take their inputs from the config file. Often additonal parameters can be set. See the individual files for more information.
+- Model_analysis: takes the output file of model testing or model predicting as input and creates majority votes or if 
+ground truth labels are available also metrics can be calculated.
+- Model_testing: Uses a test file (same structure as a training file) and a model as inputs in order to calculate predictions
+with ground truth. 
+- Model_predicting: Uses a folder of nifti slices and a model as input and predicts their class
+- Model_training_new: Uses a train file and optionally transfer weights in order to train a new model
+- Model_EndToEndPrediction_cleaned: Runs the full pipeline on raw dicom data
+- Preprocessing_cleaned/preprocessing_pipeline_moani: This file can be used to run the full preprocessing pipeline or parts of it on data.
 
