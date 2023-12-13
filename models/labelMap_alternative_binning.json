@@ -1,0 +1,9 @@
+{"diffusion": 0,
+ "perfusion": 1,
+ "suscept": 2,
+ "T1": 3,
+ "T1_c": 4,
+ "T2": 5,
+ "T2-FLAIR": 6,
+ "PD": 7,
+ "Other": 8}
