@@ -1,4 +1,5 @@
 import Model_predicting as Mp
+import Model_analysis as Ma
 import yaml
 import Preprocessing_cleaned.preprocessing_pipeline_monai as prep_pipe
 import time
@@ -29,7 +30,12 @@ predictionFile = Mp.main(config) #I could use here model testing with testing=fa
 cfg['post_processing']['prediction_file'] = predictionFile
 with open(config,'w') as ymlfile:
     yaml.safe_dump(cfg, ymlfile)
-print('finished predicting')
+print('finished predicting, analysing results')
+testing = False
+if cfg['testing']['test_label_file']:
+    testing = True
+Ma.main(predictionFile, testing=testing)
+print('finished pipeline')
 elapsed_time = time.time() - start_time
 print(elapsed_time)
 # Msb.main(args.configFile) #this is still pretty much from the original so it needs some tweeking to be inline with the rest
